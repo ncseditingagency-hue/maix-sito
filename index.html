@@ -585,7 +585,7 @@
 
     document.getElementById('loginLink').style.display = 'none';
     document.getElementById('profileWrap').style.display = 'block';
-    const AVATAR_OPTIONS_FALLBACK = ['avatars/avatar1.jpeg','avatars/avatar2.jpeg','avatars/avatar3.jpeg','avatars/avatar4.jpeg','avatars/avatar5.jpeg','avatars/avatar6.jpeg','avatars/avatar7.jpeg','avatars/avatar8.jpeg'];
+    const AVATAR_OPTIONS_FALLBACK = ['avatar1.jpeg','avatar2.jpeg','avatar3.jpeg','avatar4.jpeg','avatar5.jpeg','avatar6.jpeg','avatar7.jpeg','avatar8.jpeg'];
     function stableAvatarFor(email) {
       let hash = 0;
       for (let i = 0; i < email.length; i++) hash = (hash * 31 + email.charCodeAt(i)) >>> 0;

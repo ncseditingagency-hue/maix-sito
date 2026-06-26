@@ -115,10 +115,6 @@
 </head>
 <body>
 
-<div id="loadingScreen" style="display:flex; align-items:center; justify-content:center; min-height:100vh;">
-  <div class="loading-msg"><div class="spinner"></div>Caricamento BookEasy...</div>
-</div>
-
 <div id="dashboard" style="display:none;">
   <div class="topbar">
     <h1>📅 BookEasy <span class="badge">AI</span></h1>
@@ -171,6 +167,7 @@
   let authUserId = null;
 
   async function avvia() {
+    document.getElementById('dashboard').style.display = 'block'; // mostro subito, nessuna attesa
     try {
       const { data, error } = await supabase.auth.getSession();
       if (error) throw error;
@@ -181,25 +178,13 @@
         return;
       }
       authUserId = session.user.id;
-      document.getElementById('loadingScreen').style.display = 'none';
-      document.getElementById('dashboard').style.display = 'block';
       await caricaDati();
     } catch (err) {
       console.error('Errore avvio dashboard:', err);
-      mostraErroreCaricamento('Non riesco a verificare il tuo accesso. Controlla la connessione e riprova, oppure torna al login.', err.message);
+      document.getElementById('chatBox').innerHTML = `<div class="msg suggerimento">⚠️ Problema di accesso, ricarica la pagina. (${esc(err.message||'')})</div>`;
     }
   }
   avvia();
-
-  function mostraErroreCaricamento(messaggio, dettaglio) {
-    document.getElementById('loadingScreen').innerHTML = `
-      <div class="loading-msg" style="max-width:320px;">
-        <div style="font-size:32px; margin-bottom:10px;">😅</div>
-        <div style="font-weight:600; margin-bottom:6px;">${messaggio}</div>
-        ${dettaglio ? `<div style="font-size:11px; color:#999; margin-bottom:14px;">${esc(dettaglio)}</div>` : ''}
-        <a href="login.html" style="display:inline-block; padding:10px 20px; border-radius:18px; background:linear-gradient(135deg,#4fd8ff,#9a7bff); color:#fff; text-decoration:none; font-weight:600; font-size:13px;">Vai al login</a>
-      </div>`;
-  }
 
   document.getElementById('logoutBtn').addEventListener('click', () => { window.location.href = 'index.html'; });
   document.getElementById('attivaBtn').addEventListener('click', attivaBot);
