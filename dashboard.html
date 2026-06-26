@@ -150,39 +150,49 @@
 </div>
 
 <script>
-  const SUPABASE_URL = 'https://rtnohzdctwyzqjeungux.supabase.co';
-  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ0bm9oemRjdHd5enFqZXVuZ3V4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0NDk5MjEsImV4cCI6MjA5ODAyNTkyMX0.Rldpi9sR8IDLx8EQ6cguNbSdqVhaNLReKHqibpC6g0Q';
+  // Progetto Supabase VECCHIO: solo per login/account (stesso del resto del sito Maix)
+  const SUPABASE_URL = 'https://jrerstiidlckirwsrwxb.supabase.co';
+  const SUPABASE_ANON_KEY = 'sb_publishable_ocpocdr5RJt52INjxHFSFg_1m95AAhp';
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   let clienteId = null;
-  let primaVoltaAttivazione = false;
+  let clienteEmail = null;
 
   async function login() {
     const email = document.getElementById('loginEmail').value;
     const password = document.getElementById('loginPassword').value;
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) { document.getElementById('loginError').textContent = 'Email o password errati.'; return; }
-    entraDashboard(data.user.id);
+    await entraDashboard(data.user.email);
   }
 
   async function logout() { await supabase.auth.signOut(); location.reload(); }
 
   async function checkSessione() {
     const { data } = await supabase.auth.getSession();
-    if (data.session) entraDashboard(data.session.user.id);
+    if (data.session) await entraDashboard(data.session.user.email);
   }
   checkSessione();
 
-  function entraDashboard(uid) {
-    clienteId = uid;
+  async function entraDashboard(email) {
+    clienteEmail = email;
+    // Trova o crea il cliente Book Easy nel progetto Supabase NUOVO, usando l'email come chiave comune
+    const res = await fetch(`/.netlify/functions/get-dati?email=${encodeURIComponent(email)}`);
+    const data = await res.json();
+    clienteId = data.cliente.id;
     document.getElementById('loginScreen').style.display = 'none';
     document.getElementById('dashboard').style.display = 'block';
-    caricaDati();
+    mostraDati(data);
   }
 
   async function caricaDati() {
-    const res = await fetch(`/.netlify/functions/get-dati?cliente_id=${clienteId}`);
-    const { cliente, eventi, chat, propostaInAttesa } = await res.json();
+    const res = await fetch(`/.netlify/functions/get-dati?email=${encodeURIComponent(clienteEmail)}`);
+    const data = await res.json();
+    mostraDati(data);
+  }
+
+  function mostraDati(data) {
+    const { cliente, eventi, chat, propostaInAttesa } = data;
 
     document.getElementById('connectBanner').style.display = cliente.google_refresh_token ? 'none' : 'flex';
 
