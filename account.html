@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/png" href="/maix-logo.png">
+<title>Il tuo account — Maix</title>
+<style>
+  :root {
+    --ink: #14141a;
+    --ink-soft: #5a5a66;
+    --line: #ececf1;
+    --cyan: #4fd8ff;
+    --violet: #9a7bff;
+    --grad: linear-gradient(135deg, var(--cyan), var(--violet));
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "Inter", sans-serif;
+    background:
+      radial-gradient(circle at 25% 20%, rgba(79,216,255,0.10), transparent 45%),
+      radial-gradient(circle at 80% 80%, rgba(154,123,255,0.12), transparent 50%),
+      #fff;
+    color: var(--ink);
+    min-height: 100vh;
+  }
+  .wrap { max-width: 640px; margin: 0 auto; padding: 40px 24px; }
+  .back { font-size: 13.5px; color: var(--ink-soft); text-decoration: none; }
+  .profile-header {
+    display: flex; align-items: center; gap: 18px;
+    margin: 28px 0 36px;
+  }
+  .profile-header img {
+    width: 72px; height: 72px; border-radius: 50%;
+    box-shadow: 0 0 0 3px #fff, 0 0 0 5px rgba(154,123,255,0.3);
+  }
+  .profile-header h1 { font-size: 22px; margin: 0 0 4px; }
+  .profile-header p { font-size: 13.5px; color: var(--ink-soft); margin: 0; }
+
+  .section-title {
+    font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em;
+    color: var(--ink-soft); margin: 30px 0 12px; font-weight: 600;
+  }
+  .purchase-card {
+    display: flex; align-items: center; gap: 14px;
+    padding: 14px 16px; border: 1px solid var(--line); border-radius: 16px;
+    margin-bottom: 10px;
+  }
+  .purchase-icon { font-size: 22px; }
+  .purchase-name { font-weight: 600; font-size: 14.5px; flex: 1; }
+  .empty-state {
+    text-align: center; padding: 30px 20px; color: var(--ink-soft);
+    border: 1px dashed var(--line); border-radius: 16px; font-size: 14px;
+  }
+  .empty-state a { color: var(--violet); font-weight: 600; text-decoration: none; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <a href="index.html" class="back" id="backLink">← Torna a Maix</a>
+
+  <div class="profile-header">
+    <img id="avatarImg" src="" alt="Avatar">
+    <div>
+      <h1 id="nameLine">—</h1>
+      <p id="emailLine">—</p>
+    </div>
+  </div>
+
+  <div class="section-title" id="accountTitle">Il tuo account</div>
+  <div class="purchase-card" style="flex-direction:column; align-items:stretch; gap:0;">
+    <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--line); font-size:13.5px;">
+      <span style="color:var(--ink-soft);" id="labelEmail">Email</span>
+      <span id="charEmail">—</span>
+    </div>
+    <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--line); font-size:13.5px;">
+      <span style="color:var(--ink-soft);" id="labelName">Nome</span>
+      <span style="display:flex; align-items:center; gap:8px;">
+        <span id="charName">—</span>
+        <button id="editNameBtn" style="border:none; background:none; cursor:pointer; font-size:13px;">✏️</button>
+      </span>
+    </div>
+    <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--line); font-size:13.5px;">
+      <span style="color:var(--ink-soft);" id="labelSince">Membro da</span>
+      <span id="charSince">—</span>
+    </div>
+    <div style="display:flex; justify-content:space-between; padding:8px 0; font-size:13.5px;">
+      <span style="color:var(--ink-soft);" id="labelAvatar">Avatar</span>
+      <button id="editAvatarBtn" style="border:none; background:none; cursor:pointer; font-size:13px; color:var(--violet); font-weight:600;">🔀 <span id="changeAvatarLabel">Cambia</span></button>
+    </div>
+  </div>
+
+  <div class="section-title" id="acquisti"><span id="agentsTitle">I tuoi agenti</span></div>
+  <div id="purchasesList"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script>
+  const SUPABASE_URL = "https://jrerstiidlckirwsrwxb.supabase.co";
+  const SUPABASE_ANON_KEY = "sb_publishable_ocpocdr5RJt52INjxHFSFg_1m95AAhp";
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  const AGENT_INFO = {
+    tidydesk:   { name: "TidyDesk",   icon: "🗂️" },
+    agentcheck: { name: "AgentCheck", icon: "📊" },
+    nudgebot:   { name: "NudgeBot",   icon: "✉️" },
+    bookeasy:   { name: "BookEasy",   icon: "📅" },
+    replybuddy: { name: "ReplyBuddy", icon: "💬" }
+  };
+
+  let currentAuthUserId = null;
+  let currentAvatarUrl = null;
+
+  const lang = (navigator.language || 'it').slice(0,2) === 'it' ? 'it' : 'en';
+  const ACCOUNT_STRINGS = {
+    it: {
+      title: "Il tuo account — Maix",
+      back: "← Torna a Maix",
+      accountTitle: "Il tuo account",
+      labelEmail: "Email",
+      labelName: "Nome",
+      labelSince: "Membro da",
+      labelAvatar: "Avatar",
+      changeAvatar: "Cambia",
+      agentsTitle: "I tuoi agenti",
+      noName: "Senza nome",
+      noAgents: 'Non hai ancora nessun agente. <a href="index.html#products">Sfoglia il catalogo →</a>',
+      promptName: "Come vuoi chiamarti?",
+      dateLocale: "it-IT"
+    },
+    en: {
+      title: "Your account — Maix",
+      back: "← Back to Maix",
+      accountTitle: "Your account",
+      labelEmail: "Email",
+      labelName: "Name",
+      labelSince: "Member since",
+      labelAvatar: "Avatar",
+      changeAvatar: "Change",
+      agentsTitle: "Your agents",
+      noName: "No name",
+      noAgents: 'You don\'t have any agents yet. <a href="index.html#products">Browse the catalog →</a>',
+      promptName: "What would you like to be called?",
+      dateLocale: "en-US"
+    }
+  };
+  const t = (key) => ACCOUNT_STRINGS[lang][key];
+
+  document.documentElement.lang = lang;
+  document.title = t('title');
+  document.getElementById('backLink').textContent = t('back');
+  document.getElementById('accountTitle').textContent = t('accountTitle');
+  document.getElementById('labelEmail').textContent = t('labelEmail');
+  document.getElementById('labelName').textContent = t('labelName');
+  document.getElementById('labelSince').textContent = t('labelSince');
+  document.getElementById('labelAvatar').textContent = t('labelAvatar');
+  document.getElementById('changeAvatarLabel').textContent = t('changeAvatar');
+  document.getElementById('agentsTitle').textContent = t('agentsTitle');
+
+  async function init() {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      window.location.href = 'login.html';
+      return;
+    }
+    currentAuthUserId = session.user.id;
+
+    const { data: profile } = await supabase
+      .from('maix_users')
+      .select('full_name, avatar_url, email, purchased_agents, created_at')
+      .eq('auth_user_id', session.user.id)
+      .maybeSingle();
+
+    const AVATAR_OPTIONS_FALLBACK = ['avatars/avatar1.jpeg','avatars/avatar2.jpeg','avatars/avatar3.jpeg','avatars/avatar4.jpeg','avatars/avatar5.jpeg','avatars/avatar6.jpeg','avatars/avatar7.jpeg','avatars/avatar8.jpeg'];
+    function stableAvatarFor(email) {
+      let hash = 0;
+      for (let i = 0; i < email.length; i++) hash = (hash * 31 + email.charCodeAt(i)) >>> 0;
+      return AVATAR_OPTIONS_FALLBACK[hash % AVATAR_OPTIONS_FALLBACK.length];
+    }
+    const avatarUrl = profile?.avatar_url || stableAvatarFor(session.user.email);
+    currentAvatarUrl = avatarUrl;
+    document.getElementById('avatarImg').src = avatarUrl;
+    document.getElementById('nameLine').textContent = profile?.full_name || t('noName');
+    document.getElementById('emailLine').textContent = profile?.email || session.user.email;
+
+    document.getElementById('charEmail').textContent = profile?.email || session.user.email;
+    document.getElementById('charName').textContent = profile?.full_name || t('noName');
+    if (profile?.created_at) {
+      const d = new Date(profile.created_at);
+      document.getElementById('charSince').textContent = d.toLocaleDateString(t('dateLocale'), { day: 'numeric', month: 'long', year: 'numeric' });
+    }
+
+    const purchased = profile?.purchased_agents || [];
+    const listEl = document.getElementById('purchasesList');
+
+    // TidyDesk è sempre gratuito e disponibile per tutti, lo mostriamo sempre
+    const allOwned = ['tidydesk', ...purchased.filter(p => p !== 'tidydesk')];
+
+    if (allOwned.length === 0) {
+      listEl.innerHTML = `<div class="empty-state">${t('noAgents')}</div>`;
+    } else {
+      listEl.innerHTML = allOwned.map(id => {
+        const info = AGENT_INFO[id] || { name: id, icon: "🤖" };
+        return `<div class="purchase-card"><span class="purchase-icon">${info.icon}</span><span class="purchase-name">${info.name}</span></div>`;
+      }).join('');
+    }
+  }
+
+  document.getElementById('editNameBtn').addEventListener('click', async () => {
+    const newName = prompt(t('promptName'), document.getElementById('charName').textContent);
+    if (newName === null || !newName.trim()) return;
+    await supabase.from('maix_users').update({ full_name: newName.trim() }).eq('auth_user_id', currentAuthUserId);
+    location.reload();
+  });
+
+  document.getElementById('editAvatarBtn').addEventListener('click', async () => {
+    // Scelta casuale istantanea, escludendo l'avatar attuale così il
+    // cambiamento si vede sempre davvero.
+    const candidates = AVATAR_OPTIONS_FALLBACK.filter(url => url !== currentAvatarUrl);
+    const pool = candidates.length > 0 ? candidates : AVATAR_OPTIONS_FALLBACK;
+    const newAvatar = pool[Math.floor(Math.random() * pool.length)];
+
+    const btn = document.getElementById('editAvatarBtn');
+    btn.disabled = true;
+    const { error } = await supabase.from('maix_users').update({ avatar_url: newAvatar }).eq('auth_user_id', currentAuthUserId);
+    if (error) {
+      console.error('Errore cambio avatar:', error);
+      btn.disabled = false;
+      return;
+    }
+    location.reload();
+  });
+
+  init();
+</script>
+
+</body>
+</html>

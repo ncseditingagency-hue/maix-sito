@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🗂️</text></svg>">
+<title>Scarica TidyDesk - Maix</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+    background: linear-gradient(135deg, #faf8f5 0%, #f0ebe2 100%);
+    color: #2b2420;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+  .card {
+    width: 100%;
+    max-width: 560px;
+    background: #fff;
+    border-radius: 18px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.08);
+    overflow: hidden;
+  }
+  .header {
+    padding: 28px;
+    background: linear-gradient(135deg, #5b4636, #8a7560);
+    color: white;
+  }
+  .header h1 { margin: 0; font-size: 22px; }
+  .header p { margin: 6px 0 0; font-size: 14px; opacity: 0.85; }
+  .body { padding: 28px; }
+  .step {
+    display: flex;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid #e8e2d8;
+    font-size: 14px;
+  }
+  .step:last-child { border-bottom: none; }
+  .step .n {
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    background: #5b4636;
+    color: white;
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 600;
+  }
+  .download-btn {
+    display: block;
+    width: 100%;
+    text-align: center;
+    margin-top: 22px;
+    padding: 15px;
+    border-radius: 10px;
+    background: #5b4636;
+    border: none;
+    color: white;
+    text-decoration: none;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .download-btn:hover { background: #4a3a2d; }
+  .download-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+  .back { display: block; text-align: center; margin-top: 16px; font-size: 13px; color: #8a8178; text-decoration: none; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="header">
+      <h1>🗂️ TidyDesk</h1>
+      <p>Organizza i tuoi file automaticamente, in pochi click</p>
+    </div>
+    <div class="body">
+      <div class="step"><div class="n">1</div><div>Scarica il file <strong>tidydesk.py</strong> cliccando sul bottone qui sotto</div></div>
+      <div class="step"><div class="n">2</div><div>Se non hai Python installato, chiedi ad Atlas (la chat AI del sito) di guidarti passo passo</div></div>
+      <div class="step"><div class="n">3</div><div>Fai doppio click sul file scaricato per avviarlo</div></div>
+      <div class="step"><div class="n">4</div><div>Si apre automaticamente nel browser: scrivi la cartella da ordinare e le istruzioni</div></div>
+
+      <button class="download-btn" id="downloadBtn" type="button">⬇ Scarica TidyDesk</button>
+      <div id="downloadStatus" style="text-align:center; font-size:12.5px; color:#8a8178; margin-top:10px; min-height:16px;"></div>
+      <a class="back" href="/atlas.html">Hai bisogno di aiuto? Chiedi ad Atlas →</a>
+    </div>
+  </div>
+
+<script>
+  // Scarichiamo il file via JavaScript (fetch + blob) invece di un link diretto:
+  // così il download NON dipende dagli header del server e la pagina non
+  // naviga/si chiude mai, qualunque sia la configurazione del sito.
+  document.getElementById('downloadBtn').addEventListener('click', async () => {
+    const btn = document.getElementById('downloadBtn');
+    const status = document.getElementById('downloadStatus');
+    btn.disabled = true;
+    status.textContent = 'Sto preparando il download...';
+
+    try {
+      const res = await fetch('/tidydesk.py', { cache: 'no-store' });
+      if (!res.ok) throw new Error('File non trovato sul server (HTTP ' + res.status + ')');
+      const blob = await res.blob();
+
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'tidydesk.py';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      status.textContent = '✅ Scaricato! Questa pagina si chiuderà tra un secondo...';
+      setTimeout(() => {
+        window.close();
+        // Se il browser blocca la chiusura automatica (succede se la pagina
+        // non è stata apert da una nuova finestra/tab via script), mostriamo
+        // un messaggio invece di lasciare la scritta "si chiuderà" per sempre.
+        setTimeout(() => {
+          status.textContent = '✅ Scaricato! Puoi chiudere questa pagina.';
+        }, 400);
+      }, 1200);
+    } catch (err) {
+      status.textContent = '⚠️ Errore nel download: ' + err.message + '. Riprova o contatta il supporto.';
+    } finally {
+      btn.disabled = false;
+    }
+  });
+</script>
+</body>
+</html>

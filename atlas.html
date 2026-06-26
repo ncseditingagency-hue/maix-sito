@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/png" href="/atlas-logo.png">
+<title>Atlas — Maix</title>
+<style>
+  :root {
+    --bg: #faf9f6;
+    --sidebar-bg: #f5f3ef;
+    --ink: #1f1e1d;
+    --ink-soft: #87837c;
+    --line: #e8e5df;
+    --cyan: #4fd8ff;
+    --violet: #9a7bff;
+    --grad: linear-gradient(135deg, var(--cyan), var(--violet));
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    height: 100%;
+    font-family: -apple-system, "SF Pro Text", "Inter", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    color: var(--ink);
+    background: var(--bg);
+  }
+  .serif { font-family: "Georgia", "Iowan Old Style", "Charter", serif; }
+
+  .layout {
+    display: flex;
+    height: 100vh;
+  }
+
+  /* SIDEBAR */
+  .sidebar {
+    width: 240px;
+    background: var(--sidebar-bg);
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    padding: 18px 12px;
+    gap: 14px;
+    flex-shrink: 0;
+    overflow-y: auto;
+  }
+  .sidebar-top-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 6px;
+  }
+  .new-chat-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: rgba(154,123,255,0.12);
+    color: var(--ink);
+    border: none;
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .15s ease;
+  }
+  .new-chat-btn:hover { background: rgba(154,123,255,0.2); }
+  .conv-list-title {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--ink-soft);
+    padding: 8px 6px 2px;
+  }
+  .conv-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    overflow-y: auto;
+  }
+  .conv-item {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 9px 10px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--ink);
+    transition: background .15s ease;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .conv-item:hover { background: rgba(0,0,0,0.05); }
+  .conv-item.active { background: rgba(154,123,255,0.16); font-weight: 600; }
+  .conv-item .conv-emoji { flex-shrink: 0; }
+  .conv-item .conv-title { overflow: hidden; text-overflow: ellipsis; }
+  .conv-empty {
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    padding: 10px 8px;
+    text-align: center;
+  }
+  .sidebar-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--ink-soft);
+    cursor: pointer;
+    font-size: 16px;
+    transition: background .15s ease;
+  }
+  .sidebar-icon:hover { background: rgba(0,0,0,0.05); }
+  .sidebar-icon.active {
+    color: #ffffff;
+    background: var(--grad);
+  }
+  .sidebar-avatar {
+    margin-top: auto;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    box-shadow: 0 0 0 2px #fff, 0 0 0 4px rgba(154,123,255,0.45);
+  }
+
+  /* MAIN */
+  .main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .topbar {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 24px;
+    border-bottom: 1px solid transparent;
+  }
+  .topbar-title {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14.5px;
+    font-weight: 600;
+    color: var(--ink);
+    cursor: pointer;
+  }
+  .topbar-title .chev { display: none; }
+
+  .hero-logo-wrap {
+    position: relative;
+    width: 86px;
+    height: 86px;
+    margin: 6px auto 8px;
+  }
+  .hero-logo-glow {
+    position: absolute;
+    inset: -26px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(154,123,255,0.35), rgba(79,216,255,0.20) 55%, transparent 75%);
+    filter: blur(10px);
+    animation: heroPulse 3s ease-in-out infinite;
+  }
+  @keyframes heroPulse {
+    0%, 100% { transform: scale(0.94); opacity: 0.75; }
+    50% { transform: scale(1.08); opacity: 1; }
+  }
+  .hero-logo {
+    position: relative;
+    width: 86px;
+    height: 86px;
+    border-radius: 50%;
+    z-index: 1;
+    box-shadow: 0 10px 30px rgba(120,100,200,0.22);
+  }
+  .back-link {
+    font-size: 13px;
+    color: var(--ink-soft);
+    text-decoration: none;
+  }
+  /* share-btn rimosso */
+
+  /* CONVERSATION */
+  .conversation {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px 0 24px;
+  }
+  .conv-inner {
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 0 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+  }
+
+  .row-user {
+    display: flex;
+    justify-content: flex-end;
+  }
+  .bubble-user {
+    background: linear-gradient(135deg, rgba(79,216,255,0.14), rgba(154,123,255,0.16));
+    border-radius: 18px;
+    padding: 11px 16px;
+    font-size: 15.5px;
+    line-height: 1.55;
+    max-width: 75%;
+  }
+
+  .row-atlas { display: flex; flex-direction: column; gap: 10px; }
+  .atlas-text {
+    font-size: 16.5px;
+    line-height: 1.65;
+    color: var(--ink);
+  }
+  .atlas-text .cursor {
+    display: inline-block;
+    width: 2px;
+    height: 1em;
+    background: var(--violet);
+    margin-left: 2px;
+    animation: blinkCursor 0.9s steps(1) infinite;
+    vertical-align: -2px;
+  }
+  @keyframes blinkCursor { 50% { opacity: 0; } }
+
+  /* Mini logo persistente sotto ogni messaggio di Atlas (sempre, anche durante e dopo) */
+  .atlas-footer {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 2px;
+  }
+  .atlas-footer img {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    box-shadow: 0 0 0 1px rgba(154,123,255,0.3);
+  }
+  .atlas-footer span {
+    font-size: 11.5px;
+    color: var(--ink-soft);
+    font-weight: 600;
+  }
+
+  /* Pulsanti microfono e allegato immagine */
+  .icon-btn {
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    background: transparent;
+    border: none;
+    color: var(--ink-soft);
+    font-size: 15px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background .15s ease, color .15s ease;
+  }
+  .icon-btn:hover { background: rgba(154,123,255,0.12); color: var(--violet); }
+  .icon-btn.recording { color: #e0455c; animation: pulseRec 1s ease-in-out infinite; }
+  @keyframes pulseRec { 0%,100% { opacity: 1; } 50% { opacity: 0.45; } }
+
+  .image-preview {
+    max-width: 140px;
+    border-radius: 12px;
+    margin-bottom: 6px;
+    display: block;
+  }
+
+  /* (card prodotto inline rimosse su richiesta) */
+
+  /* LOADING SPINNER — la "rotella" tipo Claude */
+  .loader {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 2px solid rgba(154,123,255,0.18);
+    border-top-color: var(--violet);
+    animation: spin .7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* SUGGESTIONS */
+  .suggestions {
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 0 28px 10px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .suggestion-chip {
+    border: 1px solid var(--line);
+    background: #fff;
+    border-radius: 14px;
+    padding: 7px 13px;
+    font-size: 13px;
+    color: var(--ink-soft);
+    cursor: pointer;
+    transition: border-color .15s ease, color .15s ease;
+  }
+  .suggestion-chip:hover { border-color: #b9a6ff; color: var(--ink); background: #faf8ff; }
+  .suggestions.hidden { display: none; }
+
+  /* INPUT — card flottante in basso, come Claude */
+  .input-dock {
+    padding: 6px 24px 22px;
+  }
+  .input-card {
+    max-width: 680px;
+    margin: 0 auto;
+    background: #ffffff;
+    border: 1px solid var(--line);
+    border-radius: 22px;
+    box-shadow: 0 6px 24px rgba(120,100,200,0.07);
+    padding: 12px 14px 10px;
+    transition: border-color .2s ease, box-shadow .2s ease;
+  }
+  .input-card:focus-within {
+    border-color: #c9bfff;
+    box-shadow: 0 8px 28px rgba(120,100,200,0.14);
+  }
+  .input-card textarea {
+    width: 100%;
+    border: none;
+    outline: none;
+    resize: none;
+    font-size: 15.5px;
+    font-family: inherit;
+    color: var(--ink);
+    background: transparent;
+    min-height: 24px;
+    max-height: 120px;
+  }
+  .input-card textarea::placeholder { color: #a8a39a; }
+  .input-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 8px;
+  }
+  .toolbar-left { display: flex; align-items: center; gap: 10px; }
+  .model-label {
+    font-size: 12.5px;
+    font-weight: 600;
+    background: var(--grad);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .toolbar-right { display: flex; align-items: center; gap: 10px; }
+  .send-btn {
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    background: var(--grad);
+    color: white;
+    border: none;
+    font-size: 13px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: opacity .2s ease, transform .15s ease;
+  }
+  .send-btn:active { transform: scale(0.9); }
+  .send-btn:disabled { opacity: 0.35; }
+
+  .disclaimer {
+    text-align: center;
+    font-size: 11.5px;
+    color: #b5afa4;
+    padding-top: 10px;
+  }
+</style>
+</head>
+<body>
+
+<div class="layout">
+
+  <div class="sidebar">
+    <div class="sidebar-top-row">
+      <div class="sidebar-icon active">💬</div>
+      <img src="atlas-logo.png" alt="" class="sidebar-avatar">
+    </div>
+    <button class="new-chat-btn" id="newChatBtn">✨ Nuova conversazione</button>
+    <a href="atlas-code.html" class="new-chat-btn" style="text-decoration:none; background:rgba(232,161,58,0.14); color:var(--ink);">
+      <img src="atlas-logo.png" alt="" style="width:18px; height:18px; border-radius:50%; filter:hue-rotate(130deg) saturate(1.4) brightness(1.05);">
+      Atlas Code
+    </a>
+    <div class="conv-list-title">Cronologia</div>
+    <div class="conv-list" id="convList">
+      <div class="conv-empty">Accedi per salvare le conversazioni</div>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="topbar">
+      <a href="index.html" class="back-link">← Sito</a>
+      <div class="topbar-title">Atlas</div>
+      <div style="width:40px;"></div>
+    </div>
+
+    <div class="hero-logo-wrap">
+      <div class="hero-logo-glow"></div>
+      <img src="atlas-logo.png" alt="Atlas" class="hero-logo">
+    </div>
+
+    <div class="conversation" id="conversation">
+      <div class="conv-inner" id="convInner">
+        <div class="row-atlas">
+          <div class="atlas-text serif" id="greetingLine">Ciao, sono Atlas 👋 Dimmi cosa ti serve e troviamo insieme la soluzione giusta.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="suggestions" id="suggestions"></div>
+
+    <div class="input-dock">
+      <div class="input-card">
+        <div id="imagePreviewWrap" style="display:none; padding: 0 2px 6px;">
+          <img id="imagePreviewImg" class="image-preview">
+          <button id="removeImageBtn" style="font-size:11px; border:none; background:none; color:var(--ink-soft); cursor:pointer; text-decoration:underline;">Rimuovi</button>
+        </div>
+        <textarea id="userInput" rows="1" placeholder="Scrivi un messaggio..."></textarea>
+        <div class="input-toolbar">
+          <div class="toolbar-left">
+            <span class="model-label">Atlas</span>
+            <input type="file" id="imageInput" accept="image/*" style="display:none;">
+            <button class="icon-btn" id="attachBtn" title="Allega immagine">📎</button>
+            <button class="icon-btn" id="micBtn" title="Messaggio vocale">🎤</button>
+          </div>
+          <div class="toolbar-right">
+            <button class="send-btn" id="sendBtn">↑</button>
+          </div>
+        </div>
+      </div>
+      <div class="disclaimer" id="disclaimer">Atlas può commettere errori. Verifica le informazioni importanti.</div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script>
+  const GROQ_ENDPOINT = "/.netlify/functions/atlas-chat";
+
+  const STRINGS = {
+    it: {
+      greeting: "Ciao, sono Atlas 👋 Dimmi cosa ti serve e troviamo insieme la soluzione giusta.",
+      placeholder: "Scrivi un messaggio...",
+      noReply: "Non sono riuscito a risponderti, riprova.",
+      error: "Atlas non è ancora collegato al cervello AI — manca la funzione server. L'interfaccia funziona comunque.",
+      disclaimer: "Atlas può commettere errori. Verifica le informazioni importanti."
+    },
+    en: {
+      greeting: "Hi, I'm Atlas 👋 Tell me what you need and we'll find the right solution together.",
+      placeholder: "Message Atlas...",
+      noReply: "I couldn't generate a reply, please try again.",
+      error: "Atlas isn't connected to its AI brain yet — the server function is missing. The interface still works.",
+      disclaimer: "Atlas can make mistakes. Please double-check important info."
+    }
+  };
+
+  const lang = (navigator.language || 'it').slice(0,2) === 'it' ? 'it' : 'en';
+  const t = (key) => STRINGS[lang][key];
+
+  document.documentElement.lang = lang;
+  document.getElementById('greetingLine').textContent = t('greeting');
+  document.getElementById('userInput').placeholder = t('placeholder');
+  document.getElementById('disclaimer').textContent = t('disclaimer');
+
+  const convInner = document.getElementById('convInner');
+  const conv = document.getElementById('conversation');
+  const input = document.getElementById('userInput');
+  const sendBtn = document.getElementById('sendBtn');
+  const suggestionsEl = document.getElementById('suggestions');
+  let history = [];
+
+  // ---- CRONOLOGIA CONVERSAZIONI ATLAS (stile Claude) ----
+  const SUPABASE_URL = "https://jrerstiidlckirwsrwxb.supabase.co";
+  const SUPABASE_ANON_KEY = "sb_publishable_ocpocdr5RJt52INjxHFSFg_1m95AAhp";
+  let mSupabase = null;
+  try { mSupabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); } catch (e) { console.error(e); }
+
+  let currentSession = null;
+  let activeConversationId = null;
+  let titleGenerated = false;
+
+  async function initConversationHistory() {
+    if (!mSupabase) return;
+    const { data: { session } } = await mSupabase.auth.getSession();
+    currentSession = session;
+    if (!session) return; // resta il messaggio "Accedi per salvare le conversazioni"
+    await loadConversationList();
+  }
+
+  async function loadConversationList() {
+    const { data, error } = await mSupabase
+      .from('atlas_conversations')
+      .select('id, title, emoji, updated_at')
+      .eq('auth_user_id', currentSession.user.id)
+      .order('updated_at', { ascending: false })
+      .limit(50);
+
+    const listEl = document.getElementById('convList');
+    if (error || !data || data.length === 0) {
+      listEl.innerHTML = '<div class="conv-empty">Nessuna conversazione ancora</div>';
+      return;
+    }
+    listEl.innerHTML = data.map(c => `
+      <div class="conv-item${c.id === activeConversationId ? ' active' : ''}" data-id="${c.id}">
+        <span class="conv-emoji">${c.emoji || '💬'}</span>
+        <span class="conv-title">${(c.title || 'Nuova conversazione')}</span>
+      </div>
+    `).join('');
+
+    listEl.querySelectorAll('.conv-item').forEach(item => {
+      item.addEventListener('click', () => loadConversation(item.dataset.id));
+    });
+  }
+
+  async function loadConversation(convId) {
+    const { data, error } = await mSupabase
+      .from('atlas_conversations')
+      .select('messages')
+      .eq('id', convId)
+      .maybeSingle();
+    if (error || !data) return;
+
+    activeConversationId = convId;
+    titleGenerated = true; // conversazione esistente, già ha un titolo
+    history = data.messages || [];
+
+    // Ridisegniamo la chat con i messaggi salvati
+    convInner.innerHTML = '';
+    history.forEach(m => {
+      if (m.role === 'user') {
+        addUserRow(m.content);
+      } else {
+        const row = addAtlasRow();
+        finalizeAtlasRowInstant(row, m.content);
+      }
+    });
+    suggestionsEl.classList.add('hidden');
+    document.querySelectorAll('.conv-item').forEach(el => el.classList.toggle('active', el.dataset.id === convId));
+  }
+
+  function finalizeAtlasRowInstant(row, text) {
+    // Come finalizeAtlasRow ma senza l'effetto macchina da scrivere
+    // (per ricaricare una conversazione salvata, deve apparire subito).
+    row.innerHTML = `
+      <div class="atlas-text serif"></div>
+      <div class="atlas-footer"><img src="atlas-logo.png" alt=""><span>Atlas</span></div>
+    `;
+    row.querySelector('.atlas-text').innerHTML = renderMarkdownLite(text);
+  }
+
+  async function saveConversationTurn(userText, assistantText) {
+    if (!mSupabase || !currentSession) return;
+
+    if (!activeConversationId) {
+      // Prima volta in questa sessione: creiamo una nuova riga
+      const { data, error } = await mSupabase
+        .from('atlas_conversations')
+        .insert({ auth_user_id: currentSession.user.id, messages: history })
+        .select('id')
+        .single();
+      if (error) { console.error('Errore creazione conversazione:', error); return; }
+      activeConversationId = data.id;
+    } else {
+      await mSupabase
+        .from('atlas_conversations')
+        .update({ messages: history, updated_at: new Date().toISOString() })
+        .eq('id', activeConversationId);
+    }
+
+    // Generiamo titolo+emoji con l'AI solo la prima volta per questa conversazione
+    if (!titleGenerated && history.length >= 2) {
+      titleGenerated = true;
+      try {
+        const res = await fetch(GROQ_ENDPOINT, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'generateTitle', history })
+        });
+        const titleData = await res.json();
+        await mSupabase
+          .from('atlas_conversations')
+          .update({ title: titleData.title, emoji: titleData.emoji })
+          .eq('id', activeConversationId);
+      } catch (err) {
+        console.error('Errore generazione titolo:', err);
+      }
+    }
+
+    await loadConversationList();
+  }
+
+  document.getElementById('newChatBtn').addEventListener('click', () => {
+    activeConversationId = null;
+    titleGenerated = false;
+    history = [];
+    convInner.innerHTML = `<div class="row-atlas"><div class="atlas-text serif" id="greetingLine">${t('greeting')}</div></div>`;
+    suggestionsEl.classList.remove('hidden');
+    document.querySelectorAll('.conv-item').forEach(el => el.classList.remove('active'));
+  });
+
+  initConversationHistory();
+
+  // textarea che cresce in altezza come Claude
+  input.addEventListener('input', () => {
+    input.style.height = 'auto';
+    input.style.height = Math.min(input.scrollHeight, 120) + 'px';
+  });
+
+  function addUserRow(text, imageDataUrl) {
+    const row = document.createElement('div');
+    row.className = 'row-user';
+    const imgHtml = imageDataUrl ? `<img src="${imageDataUrl}" class="image-preview" style="margin-left:auto;">` : '';
+    row.innerHTML = `<div style="display:flex; flex-direction:column; align-items:flex-end; gap:6px;">${imgHtml}<div class="bubble-user"></div></div>`;
+    row.querySelector('.bubble-user').textContent = text;
+    convInner.appendChild(row);
+    conv.scrollTop = conv.scrollHeight;
+  }
+
+  function addAtlasRow() {
+    const row = document.createElement('div');
+    row.className = 'row-atlas';
+    // Il logo di Atlas è SEMPRE presente sotto al testo, da subito
+    // (durante il caricamento e dopo che ha finito di scrivere)
+    row.innerHTML = `
+      <div class="loader"></div>
+      <div class="atlas-footer"><img src="atlas-logo.png" alt=""><span>Atlas</span></div>
+    `;
+    convInner.appendChild(row);
+    conv.scrollTop = conv.scrollHeight;
+    return row;
+  }
+
+  function escapeHtml(str) {
+    return str
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  }
+
+  function renderMarkdownLite(text) {
+    let safe = escapeHtml(text);
+    safe = safe.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    safe = safe.replace(/\n/g, '<br>');
+    return safe;
+  }
+
+  async function extractAndSaveBookEasyConfig(text) {
+    const match = text.match(/<BOOKEASY_CONFIG>([\s\S]*?)<\/BOOKEASY_CONFIG>/);
+    if (!match) return text; // niente da estrarre, ritorna il testo originale
+
+    const cleanText = text.replace(match[0], '').trim();
+
+    try {
+      const config = JSON.parse(match[1]);
+      if (mSupabase && currentSession) {
+        await mSupabase.from('bookeasy_configs').upsert({
+          auth_user_id: currentSession.user.id,
+          telegram_chat_id: String(config.telegram_chat_id),
+          calendar_id: config.calendar_id,
+          business_name: config.business_name,
+          business_type: config.business_type,
+          appointment_duration_minutes: config.appointment_duration_minutes || 30,
+          ask_phone: !!config.ask_phone,
+          blocked_hours: config.blocked_hours || null,
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'telegram_chat_id' });
+      }
+    } catch (err) {
+      console.error('Errore salvataggio configurazione BookEasy:', err);
+    }
+
+    return cleanText;
+  }
+
+  function finalizeAtlasRow(row, text) {
+    // Sostituiamo lo spinner con il testo (vuoto) + il logo, che resta SEMPRE visibile
+    row.innerHTML = `
+      <div class="atlas-text serif"></div>
+      <div class="atlas-footer"><img src="atlas-logo.png" alt=""><span>Atlas</span></div>
+    `;
+    const textEl = row.querySelector('.atlas-text');
+    const rendered = renderMarkdownLite(text);
+
+    // Tokenizziamo l'HTML in "pezzi": ogni tag completo (es. <strong>, </strong>,
+    // <br>) è un pezzo unico, ogni carattere di testo normale è un pezzo.
+    // Così l'effetto macchina da scrivere non taglia MAI un tag a metà
+    // (prima capitava, causando grassetto che appariva/spariva a sprazzi).
+    const tokens = rendered.match(/<[^>]+>|[^<]/g) || [];
+
+    let i = 0;
+    const cursor = '<span class="cursor"></span>';
+
+    function tick() {
+      i++;
+      const soFar = tokens.slice(0, i).join('');
+      if (i >= tokens.length) {
+        textEl.innerHTML = rendered; // versione finale, senza cursore
+        conv.scrollTop = conv.scrollHeight;
+        return;
+      }
+      textEl.innerHTML = soFar + cursor;
+      conv.scrollTop = conv.scrollHeight;
+      setTimeout(tick, 6);
+    }
+    tick();
+  }
+
+  let pendingImage = null; // { base64, mimeType, dataUrl }
+
+  async function sendMessage() {
+    const text = input.value.trim();
+    if (!text && !pendingImage) return;
+
+    addUserRow(text || (pendingImage ? "📷 Immagine allegata" : ""), pendingImage ? pendingImage.dataUrl : null);
+    const imageToSend = pendingImage;
+    input.value = '';
+    input.style.height = 'auto';
+    clearImagePreview();
+    suggestionsEl.classList.add('hidden');
+
+    sendBtn.disabled = true;
+    input.disabled = true;
+    const row = addAtlasRow();
+
+    try {
+      const payload = imageToSend
+        ? { message: text, image: { base64: imageToSend.base64, mimeType: imageToSend.mimeType }, history: history }
+        : { message: text, history: history };
+
+      const res = await fetch(GROQ_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error('server non disponibile');
+      const data = await res.json();
+      const rawReply = data.reply || t('noReply');
+      const reply = await extractAndSaveBookEasyConfig(rawReply);
+      finalizeAtlasRow(row, reply);
+
+      if (!imageToSend) {
+        history.push({ role: 'user', content: text });
+        history.push({ role: 'assistant', content: reply });
+      } else {
+        // Salviamo un riferimento testuale dell'immagine (non il file in sé)
+        // così le domande successive ("e quanto costa?") hanno ancora contesto.
+        history.push({ role: 'user', content: (text ? text + ' ' : '') + '[ha allegato un\'immagine]' });
+        history.push({ role: 'assistant', content: reply });
+      }
+      if (history.length > 20) history = history.slice(-20);
+      saveConversationTurn(text, reply).catch(err => console.error('Errore salvataggio:', err));
+
+    } catch (err) {
+      finalizeAtlasRow(row, t('error'));
+    } finally {
+      sendBtn.disabled = false;
+      input.disabled = false;
+      input.focus();
+    }
+  }
+
+  function clearImagePreview() {
+    pendingImage = null;
+    document.getElementById('imagePreviewWrap').style.display = 'none';
+    document.getElementById('imageInput').value = '';
+  }
+
+  function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result.split(',')[1]);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  // Ridimensiona/comprime l'immagine lato browser prima di inviarla:
+  // Groq accetta al massimo 4MB per immagini in base64, le foto da
+  // smartphone spesso superano questo limite.
+  function compressImage(file, maxDim = 1600, quality = 0.82) {
+    return new Promise(async (resolve, reject) => {
+      // Su molti telefoni (specialmente iPhone) le foto sono in formato HEIC,
+      // che il tag <img> non riesce a decodificare. Proviamo prima con
+      // createImageBitmap (supporta più formati su alcuni browser mobile),
+      // e solo se fallisce anche quello, usiamo il metodo classico con Image().
+      let bitmapSource = null;
+      try {
+        if (window.createImageBitmap) {
+          bitmapSource = await createImageBitmap(file);
+        }
+      } catch (err) {
+        bitmapSource = null; // proseguiamo con il metodo classico
+      }
+
+      function drawAndResolve(sourceWidth, sourceHeight, drawFn) {
+        let width = sourceWidth, height = sourceHeight;
+        if (width > maxDim || height > maxDim) {
+          const ratio = Math.min(maxDim / width, maxDim / height);
+          width = Math.round(width * ratio);
+          height = Math.round(height * ratio);
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        drawFn(canvas.getContext('2d'), width, height);
+        const dataUrl = canvas.toDataURL('image/jpeg', quality);
+        resolve({ base64: dataUrl.split(',')[1], mimeType: 'image/jpeg', dataUrl });
+      }
+
+      if (bitmapSource) {
+        drawAndResolve(bitmapSource.width, bitmapSource.height, (ctx, w, h) => {
+          ctx.drawImage(bitmapSource, 0, 0, w, h);
+        });
+        return;
+      }
+
+      // Metodo classico (funziona per JPEG/PNG/WebP standard)
+      const img = new Image();
+      const reader = new FileReader();
+      reader.onload = () => { img.src = reader.result; };
+      reader.onerror = reject;
+      img.onload = () => {
+        drawAndResolve(img.width, img.height, (ctx, w, h) => {
+          ctx.drawImage(img, 0, 0, w, h);
+        });
+      };
+      img.onerror = () => {
+        const isHeic = /heic|heif/i.test(file.type) || /\.(heic|heif)$/i.test(file.name || '');
+        reject(new Error(isHeic ? 'FORMATO_HEIC' : 'FORMATO_NON_SUPPORTATO'));
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  document.getElementById('attachBtn').addEventListener('click', () => {
+    document.getElementById('imageInput').click();
+  });
+
+  document.getElementById('imageInput').addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    try {
+      const { base64, mimeType, dataUrl } = await compressImage(file);
+      pendingImage = { base64, mimeType, dataUrl };
+      document.getElementById('imagePreviewImg').src = dataUrl;
+      document.getElementById('imagePreviewWrap').style.display = 'block';
+    } catch (err) {
+      if (err.message === 'FORMATO_HEIC') {
+        alert('Questa foto è in formato HEIC, che il browser non riesce a leggere. Su iPhone: Impostazioni → Fotocamera → Formati → scegli "Più compatibile", oppure scegli una foto già salvata in un altro formato.');
+      } else {
+        alert("Non sono riuscito a leggere questa immagine, riprova con un'altra.");
+      }
+    }
+  });
+
+  document.getElementById('removeImageBtn').addEventListener('click', clearImagePreview);
+
+  // --- Messaggio vocale (registrazione + trascrizione via Groq Whisper) ---
+  let mediaRecorder = null;
+  let audioChunks = [];
+  let isRecording = false;
+
+  document.getElementById('micBtn').addEventListener('click', async () => {
+    const micBtn = document.getElementById('micBtn');
+
+    // Controllo preventivo: getUserMedia esiste solo in contesti sicuri
+    // (HTTPS, o localhost). Se manca, spieghiamo subito perché invece
+    // di fallire in silenzio.
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      alert('Il microfono richiede una connessione sicura (HTTPS). Se stai aprendo la pagina da un file locale, provalo invece sul sito pubblicato online.');
+      return;
+    }
+
+    if (!isRecording) {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaRecorder = new MediaRecorder(stream);
+        audioChunks = [];
+        mediaRecorder.ondataavailable = (e) => audioChunks.push(e.data);
+        mediaRecorder.onstop = async () => {
+          stream.getTracks().forEach(t => t.stop());
+          const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+          const reader = new FileReader();
+          reader.onload = async () => {
+            const base64 = reader.result.split(',')[1];
+            await sendVoiceMessage(base64, 'audio/webm');
+          };
+          reader.readAsDataURL(audioBlob);
+        };
+        mediaRecorder.start();
+        isRecording = true;
+        micBtn.classList.add('recording');
+        micBtn.title = 'Ferma registrazione';
+      } catch (err) {
+        if (err.name === 'NotAllowedError') {
+          alert('Hai bloccato il permesso del microfono. Vai nelle impostazioni del browser per questo sito e abilitalo, poi ricarica la pagina.');
+        } else if (err.name === 'NotFoundError') {
+          alert('Non trovo nessun microfono collegato a questo dispositivo.');
+        } else {
+          alert('Non riesco ad accedere al microfono: ' + err.message);
+        }
+      }
+    } else {
+      mediaRecorder.stop();
+      isRecording = false;
+      micBtn.classList.remove('recording');
+      micBtn.title = 'Messaggio vocale';
+    }
+  });
+
+  async function sendVoiceMessage(base64, mimeType) {
+    addUserRow('🎤 Messaggio vocale');
+    sendBtn.disabled = true;
+    input.disabled = true;
+    const row = addAtlasRow();
+    try {
+      const res = await fetch(GROQ_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ history: history, audio: { base64, mimeType } })
+      });
+      if (!res.ok) throw new Error('server non disponibile');
+      const data = await res.json();
+      const rawReply = data.reply || t('noReply');
+      const reply = await extractAndSaveBookEasyConfig(rawReply);
+      finalizeAtlasRow(row, reply);
+      if (data.transcript) {
+        history.push({ role: 'user', content: data.transcript });
+        history.push({ role: 'assistant', content: reply });
+        if (history.length > 20) history = history.slice(-20);
+        saveConversationTurn(data.transcript, reply).catch(err => console.error('Errore salvataggio:', err));
+      }
+    } catch (err) {
+      finalizeAtlasRow(row, t('error'));
+    } finally {
+      sendBtn.disabled = false;
+      input.disabled = false;
+    }
+  }
+
+  sendBtn.addEventListener('click', sendMessage);
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  });
+
+  const SUGGESTIONS = {
+    it: [
+      "🎯 Quale agente fa per me?",
+      "💰 Quanto costa NudgeBot?",
+      "⚙️ Come installo ReplyBuddy?",
+      "📅 Cos'è incluso in BookEasy?",
+      "↩️ Posso avere un rimborso?",
+      "🆓 TidyDesk è davvero gratis?"
+    ],
+    en: [
+      "🎯 Which agent is right for me?",
+      "💰 How much does NudgeBot cost?",
+      "⚙️ How do I install ReplyBuddy?",
+      "📅 What's included in BookEasy?",
+      "↩️ Can I get a refund?",
+      "🆓 Is TidyDesk really free?"
+    ]
+  };
+
+  function renderSuggestions() {
+    const list = SUGGESTIONS[lang];
+    suggestionsEl.innerHTML = list.map(q => `<div class="suggestion-chip">${q}</div>`).join('');
+    suggestionsEl.querySelectorAll('.suggestion-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        input.value = chip.textContent;
+        sendMessage();
+      });
+    });
+  }
+  renderSuggestions();
+</script>
+
+</body>
+</html>

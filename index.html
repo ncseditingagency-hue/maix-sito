@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/png" href="/maix-logo.png">
+<title>Maix — Agenti AI pronti all'uso</title>
+<style>
+  /* ZOOM LEGGERO UNIVERSALE — su tutto ciò che è cliccabile/interattivo.
+     Stessa durata/curva sia all'entrata (hover) che all'uscita (mouse leave),
+     così il ritorno alla normalità è morbido e non di scatto. */
+  a, button, .card, .login-link, .price, .option-btn, .profile-avatar,
+  .cta, .atlas-btn, .profile-menu-item, .suggestion-chip {
+    transition: transform .35s cubic-bezier(0.22, 1, 0.36, 1), box-shadow .35s ease, background .25s ease, border-color .25s ease, color .25s ease;
+  }
+  a:hover, button:hover, .login-link:hover, .price:hover, .option-btn:hover,
+  .profile-avatar:hover, .suggestion-chip:hover {
+    transform: scale(1.025);
+  }
+  /* Eccezioni: elementi che hanno già un loro transform speciale su hover
+     (card con translateY, cta, atlas-btn) non vanno sovrascritti qui, li
+     gestiamo a parte sotto per combinare zoom + il loro effetto originale. */
+</style>
+<style>
+  :root {
+    --bg: #ffffff;
+    --ink: #14141a;
+    --ink-soft: #5a5a66;
+    --line: #ececf1;
+    --cyan: #4fd8ff;
+    --violet: #9a7bff;
+    --grad: linear-gradient(135deg, var(--cyan), var(--violet));
+    --card-bg: #ffffff;
+    --card-shadow: 0 8px 30px rgba(80, 70, 140, 0.08);
+    --radius-lg: 28px;
+    --radius-md: 18px;
+    --radius-pill: 999px;
+  }
+
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, "Inter", "Segoe UI", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    scroll-behavior: smooth;
+  }
+
+  .glow {
+    position: absolute;
+    top: -120px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 900px;
+    height: 600px;
+    background: radial-gradient(circle, rgba(154,123,255,0.16), rgba(79,216,255,0.10) 45%, transparent 70%);
+    filter: blur(10px);
+    pointer-events: none;
+    z-index: 0;
+    animation: breathe 8s ease-in-out infinite;
+  }
+  @keyframes breathe {
+    0%, 100% { transform: translateX(-50%) scale(1); opacity: 1; }
+    50% { transform: translateX(-50%) scale(1.06); opacity: 0.85; }
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(14px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .wrap {
+    position: relative;
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 0 32px;
+  }
+
+  /* Nav */
+  nav {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 28px 32px;
+    max-width: 1180px;
+    margin: 0 auto;
+  }
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 700;
+    font-size: 18px;
+    letter-spacing: -0.01em;
+  }
+  .logo-mark {
+    height: 30px;
+    width: auto;
+    border-radius: 0;
+    display: block;
+  }
+  .login-link {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--ink);
+    text-decoration: none;
+    padding: 8px 16px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    transition: border-color .15s ease, background .15s ease;
+  }
+  .login-link:hover { border-color: #c9c2ff; background: #faf8ff; }
+
+  /* PROFILO UTENTE — avatar + menu a tendina */
+  .profile-wrap { position: relative; }
+  .profile-avatar {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid #fff;
+    box-shadow: 0 0 0 1px rgba(154,123,255,0.35), 0 4px 12px rgba(120,100,200,0.18);
+    transition: transform .15s ease;
+    object-fit: cover;
+  }
+  .profile-avatar:hover { transform: scale(1.06); }
+  .profile-menu {
+    position: absolute;
+    top: 52px;
+    right: 0;
+    width: 220px;
+    background: rgba(255,255,255,0.85);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255,255,255,0.7);
+    border-radius: 18px;
+    box-shadow: 0 16px 40px rgba(80,70,140,0.18);
+    padding: 8px;
+    display: none;
+    flex-direction: column;
+    gap: 2px;
+    z-index: 100;
+    animation: fadeUp .18s ease both;
+  }
+  .profile-menu::before {
+    content: "";
+    position: absolute;
+    top: -5px;
+    right: 14px;
+    transform: rotate(45deg);
+    width: 10px; height: 10px;
+    background: rgba(255,255,255,0.85);
+    border-left: 1px solid rgba(255,255,255,0.7);
+    border-top: 1px solid rgba(255,255,255,0.7);
+    pointer-events: none;
+  }
+  .profile-menu.open { display: flex; }
+  .profile-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    font-size: 14px;
+    color: var(--ink);
+    text-decoration: none;
+    cursor: pointer;
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+    position: relative;
+    z-index: 1;
+    pointer-events: auto;
+  }
+  .profile-menu-item:hover { background: rgba(154,123,255,0.1); }
+  .profile-menu-divider { height: 1px; background: var(--line); margin: 4px 6px; pointer-events: none; }
+  .profile-menu-item.danger { color: #c0524a; }
+
+  /* CORIANDOLI */
+  .confetti-piece {
+    position: fixed;
+    top: -20px;
+    width: 9px; height: 14px;
+    z-index: 9999;
+    pointer-events: none;
+    animation: confettiFall linear forwards;
+  }
+  @keyframes confettiFall {
+    to { transform: translateY(110vh) rotate(720deg); opacity: 0.9; }
+  }
+  .nav-links {
+    display: flex;
+    gap: 32px;
+    font-size: 14.5px;
+    color: var(--ink-soft);
+  }
+  .nav-links a {
+    text-decoration: none;
+    color: inherit;
+    transition: color .15s ease;
+  }
+  .nav-links a:hover, .nav-links a:focus-visible { color: var(--ink); }
+
+  /* Hero */
+  .hero {
+    position: relative;
+    z-index: 2;
+    text-align: center;
+    padding: 90px 24px 70px;
+  }
+  .hero h1 {
+    font-size: clamp(34px, 5vw, 54px);
+    line-height: 1.12;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin: 0 0 22px;
+    animation: fadeUp .6s ease both;
+  }
+  .hero p {
+    font-size: 18px;
+    color: var(--ink-soft);
+    max-width: 540px;
+    margin: 0 auto 36px;
+    line-height: 1.5;
+    animation: fadeUp .6s ease .1s both;
+  }
+  .cta {
+    display: inline-block;
+    padding: 15px 30px;
+    border-radius: var(--radius-pill);
+    background: var(--grad);
+    color: #fff;
+    font-weight: 600;
+    font-size: 15px;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 10px 30px rgba(154,123,255,0.30);
+    transition: transform .15s ease, box-shadow .15s ease;
+    animation: fadeUp .6s ease .2s both;
+  }
+  .cta:hover { transform: translateY(-0.5px) scale(1.025); box-shadow: 0 12px 32px rgba(154,123,255,0.34); }
+
+  /* SQUISH + TOPPLE — al click del CTA, prima di scrollare alla sezione prodotti */
+  @keyframes ctaSquish {
+    0%   { transform: scale(1); }
+    20%  { transform: scale(0.78, 1.22); }
+    40%  { transform: scale(1.18, 0.82); }
+    60%  { transform: scale(0.90, 1.10); }
+    80%  { transform: scale(1.05, 0.96); }
+    100% { transform: scale(1); }
+  }
+  @keyframes ctaTopple {
+    0%   { transform: rotate(0deg); }
+    30%  { transform: rotate(-6deg); }
+    60%  { transform: rotate(4deg); }
+    100% { transform: rotate(0deg); }
+  }
+  .cta.cta-clicked {
+    animation: ctaSquish .55s cubic-bezier(.36,1.8,.4,1) both,
+               ctaTopple .55s cubic-bezier(.36,1.8,.4,1) both;
+  }
+
+  /* Product grid */
+  .products {
+    position: relative;
+    z-index: 2;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+    padding: 0 0 100px;
+  }
+  @media (max-width: 980px) {
+    .products { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 600px) {
+    .products { grid-template-columns: 1fr; }
+  }
+
+  .card {
+    background: var(--card-bg);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    padding: 26px 24px 22px;
+    box-shadow: var(--card-shadow);
+    cursor: pointer;
+    transition: transform .35s cubic-bezier(0.22, 1, 0.36, 1), box-shadow .35s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    opacity: 0;
+    animation: fadeUp .55s ease both;
+  }
+  .card:hover {
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 14px 34px rgba(80,70,140,0.12);
+  }
+  .card-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+  }
+  .card-icon.free { background: #eafff4; }
+  .card-icon.a { background: #eaf6ff; }
+  .card-icon.b { background: #f1ecff; }
+  .card-icon.c { background: #fff0ef; }
+
+  .card h3 {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  .card p {
+    margin: 0;
+    font-size: 14px;
+    color: var(--ink-soft);
+    line-height: 1.45;
+    flex-grow: 1;
+  }
+  .card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 4px;
+  }
+  .price {
+    font-size: 14px;
+    font-weight: 700;
+    padding: 6px 14px;
+    border-radius: var(--radius-pill);
+    color: #fff;
+    background-size: 300% 300%;
+    animation: priceGradient 5s ease infinite;
+  }
+  @keyframes priceGradient {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+  /* Livello 0 — Gratis (TidyDesk, AgentCheck): verde foresta scuro e saturo */
+  .price.tier-0 { background: linear-gradient(120deg, #0f6b3c, #1f9d5c, #0f6b3c); }
+  /* Livello 1 — €60 (NudgeBot): verde smeraldo-acqua, ben distinto dal verde foresta */
+  .price.tier-1 { background: linear-gradient(120deg, #0e9e7a, #2ecda0, #0e9e7a); }
+  /* Livello 2 — €100 (BookEasy): verde lime-giallo, tonalità diversa, più chiara */
+  .price.tier-2 { background: linear-gradient(120deg, #7fc93e, #b8e23a, #7fc93e); color: #2e3a14; }
+  /* Livello 3 — €120 (ReplyBuddy, il più caro): giallo oro pieno, il più chiaro/caldo */
+  .price.tier-3 { background: linear-gradient(120deg, #e8c93a, #ffe066, #e8c93a); color: #5a4a0a; }
+  .badge {
+    font-size: 11px;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  /* Atlas floating button */
+  .atlas-btn {
+    position: fixed;
+    bottom: 26px;
+    right: 26px;
+    width: 58px;
+    height: 58px;
+    border-radius: 50%;
+    background: #fff;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 24px rgba(120,100,255,0.22);
+    z-index: 50;
+    transition: transform .4s ease, box-shadow .4s ease;
+    overflow: hidden;
+    animation: atlasBreathe 4s ease-in-out infinite;
+  }
+  @keyframes atlasBreathe {
+    0%, 100% { box-shadow: 0 8px 24px rgba(120,100,255,0.22); }
+    50% { box-shadow: 0 8px 28px rgba(120,100,255,0.34); }
+  }
+  .atlas-btn:hover { transform: scale(1.05); box-shadow: 0 10px 28px rgba(120,100,255,0.28); }
+
+  footer {
+    text-align: center;
+    padding: 30px;
+    font-size: 13px;
+    color: var(--ink-soft);
+    border-top: 1px solid var(--line);
+  }
+
+</style>
+<!-- Precarichiamo i video prodotto in background (bassa priorità, non
+     blocca questa pagina): quando l'utente apre una pagina prodotto,
+     il video è già nella cache del browser e parte subito. -->
+<link rel="prefetch" href="intro-tidydesk.mp4" as="video">
+<link rel="prefetch" href="intro-agentcheck.mp4" as="video">
+<link rel="prefetch" href="intro-nudgebot.mp4" as="video">
+<link rel="prefetch" href="intro-bookeasy.mp4" as="video">
+<link rel="prefetch" href="intro-replybuddy.mp4" as="video">
+</head>
+<body>
+
+<div class="glow"></div>
+
+<nav>
+  <div class="logo"><img src="maix-logo.png" alt="Maix" class="logo-mark"></div>
+  <a href="login.html" class="login-link" id="loginLink">Accedi</a>
+  <div class="profile-wrap" id="profileWrap" style="display:none;">
+    <img class="profile-avatar" id="profileAvatar" src="" alt="Profilo">
+    <div class="profile-menu" id="profileMenu">
+      <div style="padding:10px 12px; font-size:13px; color:var(--ink-soft);" id="profileMenuName">—</div>
+      <div class="profile-menu-divider"></div>
+      <button class="profile-menu-item" id="menuAccount">👤 Il tuo account</button>
+      <button class="profile-menu-item" id="menuPurchases">🛍️ I tuoi acquisti</button>
+      <div class="profile-menu-divider"></div>
+      <button class="profile-menu-item danger" id="menuSignOut">🚪 Esci</button>
+    </div>
+  </div>
+</nav>
+
+<section class="hero wrap">
+  <h1>Agenti AI pronti,<br>installati in pochi minuti.</h1>
+  <p>Scegli l'agente giusto per il tuo lavoro. Atlas ti guida dall'acquisto all'installazione, passo dopo passo.</p>
+  <a href="#products" class="cta">Trova il tuo agente</a>
+</section>
+
+<section class="products wrap" id="products">
+
+  <div class="card" data-product="tidydesk">
+    <div class="card-icon free">🗂️</div>
+    <h3>TidyDesk</h3>
+    <p>Ordina e rinomina i file del tuo computer in automatico, senza muovere un dito.</p>
+    <div class="card-footer">
+      <span class="price tier-0">Gratis</span>
+    </div>
+  </div>
+
+  <div class="card" data-product="agentcheck">
+    <div class="card-icon free">📊</div>
+    <h3>AgentCheck</h3>
+    <p>Mostra in un unico posto come stanno andando tutti i tuoi agenti.</p>
+    <div class="card-footer">
+      <span class="price tier-0">Gratis con 2+ agenti</span>
+    </div>
+  </div>
+
+  <div class="card" data-product="nudgebot">
+    <div class="card-icon a">✉️</div>
+    <h3>NudgeBot</h3>
+    <p>Trova nuovi contatti e manda email automatiche con follow-up, finché non ottiene risposta.</p>
+    <div class="card-footer">
+      <span class="price tier-1">€60</span>
+      <span class="badge">Una tantum</span>
+    </div>
+  </div>
+
+  <div class="card" data-product="bookeasy">
+    <div class="card-icon c">📅</div>
+    <h3>BookEasy</h3>
+    <p>Manda un recap disordinato dei tuoi appuntamenti, lui li fissa tutti sul calendario.</p>
+    <div class="card-footer">
+      <span class="price tier-2">€100</span>
+      <span class="badge">Una tantum</span>
+    </div>
+  </div>
+
+  <div class="card" data-product="replybuddy">
+    <div class="card-icon b">💬</div>
+    <h3>ReplyBuddy</h3>
+    <p>Risponde ai tuoi clienti come faresti tu e genera preventivi pronti durante la chat.</p>
+    <div class="card-footer">
+      <span class="price tier-3">€120</span>
+      <span class="badge">Una tantum</span>
+    </div>
+  </div>
+
+</section>
+
+<footer id="contact">
+  Maix — Hai una domanda? Chiedi ad Atlas, in basso a destra.
+</footer>
+
+<a href="atlas.html" class="atlas-btn" aria-label="Apri Atlas, l'assistente Maix">
+  <img src="atlas-logo.png" alt="Atlas" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">
+</a>
+
+<script>
+  // Animazione scalettata per le card
+  // Bottone "Trova il tuo agente": prima un piccolo effetto squish+topple,
+  // POI lo scroll verso i prodotti (non subito, altrimenti l'animazione
+  // si vedrebbe già a metà schermo successivo).
+  const ctaBtn = document.querySelector('.cta');
+  if (ctaBtn) {
+    ctaBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      ctaBtn.classList.remove('cta-clicked');
+      // Forziamo un reflow per poter ri-triggerare l'animazione su click ripetuti
+      void ctaBtn.offsetWidth;
+      ctaBtn.classList.add('cta-clicked');
+      setTimeout(() => {
+        document.querySelector('#products').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 320); // scrolla mentre l'animazione (550ms) sta ancora concludendosi, sembra fluido
+      setTimeout(() => ctaBtn.classList.remove('cta-clicked'), 600);
+    });
+  }
+
+  document.querySelectorAll('.card').forEach((card, i) => {
+    card.style.animationDelay = (0.1 + i * 0.08) + 's';
+  });
+
+  document.querySelectorAll('.card').forEach(card => {
+    card.addEventListener('click', () => {
+      window.location.href = 'product.html?agent=' + card.dataset.product;
+    });
+  });
+
+  // Traduzione automatica in base alla lingua del browser
+  const lang = (navigator.language || 'it').slice(0,2) === 'it' ? 'it' : 'en';
+  if (lang === 'en') {
+    document.documentElement.lang = 'en';
+    document.querySelector('.hero h1').innerHTML = "Ready-made AI agents,<br>installed in minutes.";
+    document.querySelector('.hero p').textContent = "Pick the right agent for your work. Atlas guides you from purchase to installation, step by step.";
+    document.querySelector('.cta').textContent = "Find your agent";
+    document.querySelector('footer').textContent = "Maix — Have a question? Ask Atlas, bottom right.";
+    document.getElementById('loginLink').textContent = "Sign in";
+
+    const translations = {
+      tidydesk: { desc: "Automatically sorts and renames the files on your computer." },
+      nudgebot: { desc: "Finds new contacts and sends automatic follow-up emails until you get a reply.", badge: "One-time" },
+      replybuddy: { desc: "Replies to your customers just like you would, and generates ready quotes during the chat.", badge: "One-time" },
+      bookeasy: { desc: "Send a messy appointments recap, it books everything on your calendar.", badge: "One-time" },
+      agentcheck: { desc: "Shows you in one place how all your agents are doing." }
+    };
+    document.querySelectorAll('.card').forEach(card => {
+      const id = card.dataset.product;
+      const tr = translations[id];
+      if (!tr) return;
+      card.querySelector('p').textContent = tr.desc;
+      const badge = card.querySelector('.badge');
+      if (badge && tr.badge) badge.textContent = tr.badge;
+      if (id === 'tidydesk') card.querySelector('.price').textContent = "Free";
+      if (id === 'agentcheck') card.querySelector('.price').textContent = "Free with 2+ agents";
+    });
+  }
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script>
+  const SUPABASE_URL = "https://jrerstiidlckirwsrwxb.supabase.co";
+  const SUPABASE_ANON_KEY = "sb_publishable_ocpocdr5RJt52INjxHFSFg_1m95AAhp";
+  let mSupabase = null;
+  try { mSupabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); } catch (e) { console.error(e); }
+
+  function fireConfetti() {
+    const colors = ['#4fd8ff', '#9a7bff', '#ff9d4d', '#4caf82', '#e8638b'];
+    for (let i = 0; i < 60; i++) {
+      const piece = document.createElement('div');
+      piece.className = 'confetti-piece';
+      piece.style.left = Math.random() * 100 + 'vw';
+      piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+      piece.style.animationDuration = (2 + Math.random() * 1.5) + 's';
+      piece.style.transform = `rotate(${Math.random() * 360}deg)`;
+      document.body.appendChild(piece);
+      setTimeout(() => piece.remove(), 4000);
+    }
+  }
+
+  async function initProfile() {
+    if (!mSupabase) return;
+    const { data: { session } } = await mSupabase.auth.getSession();
+    if (!session) return; // utente non loggato: resta visibile il link "Accedi"
+
+    const { data: profile } = await mSupabase
+      .from('maix_users')
+      .select('full_name, avatar_url, email')
+      .eq('auth_user_id', session.user.id)
+      .maybeSingle();
+
+    document.getElementById('loginLink').style.display = 'none';
+    document.getElementById('profileWrap').style.display = 'block';
+    const AVATAR_OPTIONS_FALLBACK = ['avatars/avatar1.jpeg','avatars/avatar2.jpeg','avatars/avatar3.jpeg','avatars/avatar4.jpeg','avatars/avatar5.jpeg','avatars/avatar6.jpeg','avatars/avatar7.jpeg','avatars/avatar8.jpeg'];
+    function stableAvatarFor(email) {
+      let hash = 0;
+      for (let i = 0; i < email.length; i++) hash = (hash * 31 + email.charCodeAt(i)) >>> 0;
+      return AVATAR_OPTIONS_FALLBACK[hash % AVATAR_OPTIONS_FALLBACK.length];
+    }
+    const avatarUrl = profile?.avatar_url || stableAvatarFor(session.user.email);
+    document.getElementById('profileAvatar').src = avatarUrl;
+    document.getElementById('profileMenuName').textContent = profile?.full_name || session.user.email;
+
+    // Coriandoli SOLO subito dopo un login/registrazione appena avvenuto
+    if (sessionStorage.getItem('maix_just_logged_in') === '1') {
+      sessionStorage.removeItem('maix_just_logged_in');
+      fireConfetti();
+    }
+  }
+
+  document.getElementById('profileAvatar')?.addEventListener('click', () => {
+    document.getElementById('profileMenu')?.classList.toggle('open');
+  });
+  document.addEventListener('click', (e) => {
+    const wrap = document.getElementById('profileWrap');
+    if (wrap && !wrap.contains(e.target)) {
+      document.getElementById('profileMenu')?.classList.remove('open');
+    }
+  });
+
+  document.getElementById('menuAccount')?.addEventListener('click', () => {
+    window.location.href = 'account.html';
+  });
+  document.getElementById('menuPurchases')?.addEventListener('click', () => {
+    window.location.href = 'account.html#acquisti';
+  });
+  function showGlassConfirm(message, onConfirm) {
+    const overlay = document.createElement('div');
+    overlay.style = 'position:fixed; inset:0; background:rgba(20,15,35,0.35); backdrop-filter:blur(4px); display:flex; align-items:center; justify-content:center; z-index:2000; animation:overlayFadeIn .2s ease both;';
+    overlay.innerHTML = `
+      <div style="
+        background:rgba(255,255,255,0.65); backdrop-filter:blur(24px) saturate(180%);
+        -webkit-backdrop-filter:blur(24px) saturate(180%); border:1px solid rgba(255,255,255,0.8);
+        border-radius:24px; padding:28px; max-width:320px; width:88%; text-align:center;
+        box-shadow:0 24px 60px rgba(80,60,160,0.3), inset 0 1px 1px rgba(255,255,255,0.9);
+        animation:pickerPopIn .25s cubic-bezier(.34,1.56,.64,1) both;
+      ">
+        <p style="margin:0 0 20px; font-size:14.5px; color:var(--ink);">${message}</p>
+        <div style="display:flex; gap:10px;">
+          <button id="glassConfirmCancel" style="flex:1; padding:12px; border-radius:999px; border:1px solid rgba(255,255,255,0.6); background:rgba(255,255,255,0.5); cursor:pointer; font-size:13.5px; font-weight:600; color:var(--ink);">Annulla</button>
+          <button id="glassConfirmOk" style="flex:1; padding:12px; border-radius:999px; border:none; background:linear-gradient(135deg,#e0455c,#c0303f); color:#fff; cursor:pointer; font-size:13.5px; font-weight:700; box-shadow:0 8px 20px rgba(192,48,63,0.35);">Esci</button>
+        </div>
+      </div>
+      <style>
+        @keyframes overlayFadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes pickerPopIn { from { opacity: 0; transform: scale(0.85) translateY(14px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+      </style>
+    `;
+    document.body.appendChild(overlay);
+    document.getElementById('glassConfirmCancel').addEventListener('click', () => overlay.remove());
+    document.getElementById('glassConfirmOk').addEventListener('click', () => { overlay.remove(); onConfirm(); });
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+  }
+
+  document.getElementById('menuSignOut')?.addEventListener('click', () => {
+    document.getElementById('profileMenu')?.classList.remove('open');
+    showGlassConfirm('Sei sicuro di voler uscire dal tuo account Maix?', async () => {
+      if (mSupabase) await mSupabase.auth.signOut();
+      window.location.href = 'index.html';
+    });
+  });
+
+  initProfile();
+</script>
+
+</body>
+</html>

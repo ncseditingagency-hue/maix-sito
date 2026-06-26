@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/png" href="/maix-logo.png">
+<title>Maix — Agente</title>
+<style>
+  :root {
+    --ink: #14141a;
+    --ink-soft: #5a5a66;
+    --line: #ececf1;
+    --cyan: #4fd8ff;
+    --violet: #9a7bff;
+    --grad: linear-gradient(135deg, var(--cyan), var(--violet));
+    --glass: rgba(255,255,255,0.55);
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    height: 100vh;
+    overflow: hidden;
+    background: #ffffff;
+    color: var(--ink);
+    font-family: -apple-system, "Inter", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap {
+    display: grid;
+    grid-template-columns: 1.1fr 1fr;
+    height: 100vh;
+  }
+  @media (max-width: 900px) {
+    .wrap { grid-template-columns: 1fr; }
+  }
+
+  /* LEFT — video a schermo pieno, con sfondo "liquid glass" nei margini
+     vuoti (il video è 1:1, il riquadro non lo è sempre) */
+  .video-side {
+    position: relative;
+    overflow: hidden;
+    background: #0d0e12;
+  }
+  .video-side::before {
+    content: "";
+    position: absolute;
+    inset: -10%;
+    background:
+      radial-gradient(circle at 20% 25%, rgba(79,216,255,0.35), transparent 50%),
+      radial-gradient(circle at 80% 70%, rgba(154,123,255,0.35), transparent 55%),
+      radial-gradient(circle at 50% 95%, rgba(255,180,120,0.20), transparent 50%),
+      linear-gradient(160deg, #0d0e12, #15171f);
+    background-size: 180% 180%, 180% 180%, 180% 180%, 100% 100%;
+    filter: blur(40px) saturate(160%);
+    animation: glassDriftBg 14s ease-in-out infinite;
+    z-index: 0;
+  }
+  @keyframes glassDriftBg {
+    0%, 100% { background-position: 0% 0%, 100% 100%, 50% 100%, 0 0; }
+    50%      { background-position: 30% 20%, 70% 80%, 60% 90%, 0 0; }
+  }
+  video, .video-placeholder {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+    padding: 12% 14%;
+    box-sizing: border-box;
+  }
+  /* Cornice "vetro" attorno al video stesso, per integrarlo nello sfondo */
+  video {
+    background: rgba(255,255,255,0.04);
+    backdrop-filter: blur(2px);
+  }
+  .video-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255,255,255,0.6);
+    font-size: 14px;
+  }
+
+  /* BOTTONE REPLAY — liquid glass, appare solo quando il video finisce */
+  .replay-btn {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    z-index: 2;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.35);
+    background: rgba(255,255,255,0.14);
+    backdrop-filter: blur(14px) saturate(180%);
+    -webkit-backdrop-filter: blur(14px) saturate(180%);
+    color: #fff;
+    font-size: 19px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.25), inset 0 1px 1px rgba(255,255,255,0.3);
+    transition: transform .2s cubic-bezier(.34,1.56,.64,1), background .2s ease;
+    animation: fadeUp .3s ease both;
+  }
+  .replay-btn.visible { display: flex; }
+  .replay-btn:hover { transform: scale(1.08); background: rgba(255,255,255,0.22); }
+  .replay-btn:active { transform: scale(0.92); }
+
+  .glass-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    max-width: 480px;
+    width: 100%;
+    animation: fadeUp .55s ease .1s both;
+  }
+  .chip {
+    background: var(--glass);
+    border: 1px solid rgba(255,255,255,0.7);
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    border-radius: 14px;
+    padding: 10px 14px;
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--ink-soft);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    box-shadow: 0 4px 18px rgba(100,90,160,0.08);
+  }
+
+  /* RIGHT — info */
+  .info-side {
+    position: relative;
+    padding: 32px 56px 0;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+  }
+  .info-scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding-bottom: 20px;
+  }
+  .bottom-bar {
+    flex-shrink: 0;
+    padding: 16px 0 32px;
+    border-top: 1px solid var(--line);
+    background: #ffffff;
+  }
+  .close {
+    position: absolute;
+    top: 28px;
+    right: 28px;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: rgba(245,244,251,0.8);
+    backdrop-filter: blur(10px);
+    border: none;
+    font-size: 16px;
+    color: var(--ink-soft);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform .2s ease, background .2s ease;
+  }
+  .close:hover { background: #ece9f7; transform: scale(1.05); }
+
+  .product-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 14px;
+    animation: fadeUp .5s ease both;
+  }
+  .product-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 13px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    background: #f1ecff;
+  }
+  .product-header h1 {
+    font-size: 20px;
+    font-weight: 600;
+    margin: 0;
+    letter-spacing: -0.01em;
+  }
+  .tagline {
+    font-size: 13px;
+    color: var(--ink-soft);
+    margin: 2px 0 0;
+  }
+
+  .description {
+    margin-top: 14px;
+    font-size: 14.5px;
+    line-height: 1.5;
+    color: var(--ink-soft);
+    max-width: 460px;
+    animation: fadeUp .5s ease .05s both;
+  }
+
+  /* GLASS SECTION CARDS — "How it works" / "What you need" / "Includes" */
+  .section-card {
+    margin-top: 12px;
+    background: var(--glass);
+    border: 1px solid rgba(255,255,255,0.7);
+    backdrop-filter: blur(18px) saturate(180%);
+    -webkit-backdrop-filter: blur(18px) saturate(180%);
+    border-radius: 16px;
+    padding: 14px 18px;
+    box-shadow: 0 6px 24px rgba(100,90,160,0.07);
+    animation: fadeUp .5s ease .1s both;
+  }
+  .section-card h3 {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--ink-soft);
+    margin: 0 0 8px;
+    font-weight: 600;
+  }
+  .section-card ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .section-card li {
+    font-size: 13.5px;
+    color: var(--ink);
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    line-height: 1.35;
+  }
+  .section-card li::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--grad);
+    margin-top: 6px;
+    flex-shrink: 0;
+  }
+
+  .price-block {
+    margin-top: 16px;
+    animation: fadeUp .5s ease .15s both;
+  }
+  .price {
+    font-size: 34px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+  .price-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-soft);
+    background: #f5f4fb;
+    display: inline-block;
+    padding: 3px 9px;
+    border-radius: 999px;
+    margin-top: 6px;
+  }
+
+  .actions {
+    margin-top: 16px;
+    padding-top: 2px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    animation: fadeUp .5s ease .2s both;
+  }
+  .btn {
+    border-radius: 999px;
+    padding: 13px 20px;
+    text-align: center;
+    font-weight: 600;
+    font-size: 14.5px;
+    text-decoration: none;
+    cursor: pointer;
+    border: none;
+    transition: transform .15s ease, box-shadow .15s ease;
+  }
+  .btn:active { transform: scale(0.98); }
+  .btn-chat {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.4);
+    color: #fff;
+    font-weight: 700;
+    box-shadow: 0 10px 26px rgba(40,100,220,0.32), inset 0 1px 1px rgba(255,255,255,0.35);
+    z-index: 0;
+  }
+  /* Strato "acqua" — ora è L'UNICO sfondo del bottone (niente più colore
+     solido sopra), così le onde si vedono piene e chiare, non nascoste. */
+  .btn-chat .atlas-water {
+    position: absolute;
+    inset: -30% -15%;
+    background:
+      radial-gradient(ellipse at 20% 30%, rgba(140,200,255,0.95), transparent 55%),
+      radial-gradient(ellipse at 75% 65%, rgba(70,140,255,0.95), transparent 55%),
+      radial-gradient(ellipse at 45% 90%, rgba(180,225,255,0.7), transparent 50%),
+      linear-gradient(120deg, #0e3f85, #1b5fc9, #2f7de0, #1450a0);
+    background-size: 220% 220%, 220% 220%, 220% 220%, 280% 280%;
+    animation: atlasWaterMove 7s ease-in-out infinite;
+    z-index: -2;
+  }
+  @keyframes atlasWaterMove {
+    0%   { background-position: 0% 0%, 100% 100%, 50% 100%, 0% 50%; }
+    50%  { background-position: 50% 40%, 50% 50%, 60% 70%, 100% 50%; }
+    100% { background-position: 0% 0%, 100% 100%, 50% 100%, 0% 50%; }
+  }
+  /* Loghi Atlas: flusso continuo che entra ed esce da destra (loop), usando
+     "left" in percentuale — che si calcola sulla larghezza del BOTTONE,
+     non su quella minuscola del logo (era questo il bug: "transform"
+     calcola le percentuali sulla dimensione dell'elemento stesso). */
+  .btn-chat .atlas-icon {
+    position: absolute;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    opacity: 0.55;
+    z-index: -1;
+  }
+  @keyframes atlasFlow {
+    from { left: -8%; }
+    to   { left: 108%; }
+  }
+  @keyframes atlasSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+  .btn-chat .atlas-icon:nth-of-type(1) { top: 12%; width: 16px; height: 16px; animation: atlasFlow 5s linear infinite, atlasSpin 2.4s linear infinite; animation-delay: 0s, 0s; }
+  .btn-chat .atlas-icon:nth-of-type(2) { top: 60%; width: 22px; height: 22px; animation: atlasFlow 6.2s linear infinite, atlasSpin 3.1s linear infinite; animation-delay: -1.2s, 0s; }
+  .btn-chat .atlas-icon:nth-of-type(3) { top: 30%; width: 18px; height: 18px; animation: atlasFlow 4.6s linear infinite, atlasSpin 2s linear infinite; animation-delay: -2.4s, 0s; }
+  .btn-chat .atlas-icon:nth-of-type(4) { top: 78%; width: 24px; height: 24px; animation: atlasFlow 7s linear infinite, atlasSpin 3.6s linear infinite; animation-delay: -3.6s, 0s; }
+  .btn-chat .atlas-icon:nth-of-type(5) { top: 18%; width: 17px; height: 17px; animation: atlasFlow 5.5s linear infinite, atlasSpin 2.7s linear infinite; animation-delay: -0.8s, 0s; }
+  .btn-chat .atlas-icon:nth-of-type(6) { top: 50%; width: 21px; height: 21px; animation: atlasFlow 6.6s linear infinite, atlasSpin 2.2s linear infinite; animation-delay: -4.4s, 0s; }
+  .btn-chat .atlas-icon:nth-of-type(7) { top: 85%; width: 19px; height: 19px; animation: atlasFlow 5.8s linear infinite, atlasSpin 3.3s linear infinite; animation-delay: -2s, 0s; }
+  .btn-chat .atlas-icon:nth-of-type(8) { top: 40%; width: 23px; height: 23px; animation: atlasFlow 6.9s linear infinite, atlasSpin 2.9s linear infinite; animation-delay: -5.2s, 0s; }
+
+  .btn-chat span.btn-chat-label {
+    position: relative;
+    z-index: 1;
+  }
+  .btn-chat:hover { box-shadow: 0 14px 32px rgba(40,100,220,0.42); }
+  .btn-chat:active .btn-chat-inner { transform: none; }
+  .btn-chat .btn-chat-inner {
+    display: block;
+    transition: transform .18s cubic-bezier(.36,1.8,.4,1);
+  }
+
+  /* BOTTONE DOWNLOAD/ACQUISTA — Liquid Glass / iOS, colorato in base al prezzo.
+     PayPal resta il bottone nativo gold, non lo tocchiamo. */
+  .btn-buy {
+    position: relative;
+    background: rgba(255,255,255,0.5);
+    backdrop-filter: blur(18px) saturate(180%);
+    -webkit-backdrop-filter: blur(18px) saturate(180%);
+    border: 1px solid rgba(255,255,255,0.65);
+    color: #fff;
+    font-weight: 700;
+    overflow: hidden;
+    box-shadow: 0 10px 28px rgba(0,0,0,0.18), inset 0 1px 1px rgba(255,255,255,0.5);
+    transition: transform .25s cubic-bezier(.34,1.56,.64,1), box-shadow .25s ease;
+  }
+  .btn-buy::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-size: 250% 250%;
+    animation: btnGradientMove 4.5s ease infinite;
+    z-index: -1;
+  }
+  @keyframes btnGradientMove {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+  .btn-buy:hover { box-shadow: 0 16px 36px rgba(0,0,0,0.24); }
+  .btn-buy:active { opacity: 0.92; }
+
+  /* Colori per livello di prezzo, stessa progressione di index.html */
+  .btn-buy.price-tier-0::before { background-image: linear-gradient(120deg, #0f6b3c, #1f9d5c, #0f6b3c); }
+  .btn-buy.price-tier-1::before { background-image: linear-gradient(120deg, #0e9e7a, #2ecda0, #0e9e7a); }
+  .btn-buy.price-tier-2::before { background-image: linear-gradient(120deg, #7fc93e, #b8e23a, #7fc93e); }
+  .btn-buy.price-tier-3::before { background-image: linear-gradient(120deg, #e8c93a, #ffe066, #e8c93a); }
+  .btn-buy.price-tier-2, .btn-buy.price-tier-3 { color: #2e3a14; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="https://www.paypal.com/sdk/js?client-id=AS11o9Ppgw-C-j2MqYJpso72FiaAaNXPjKLl5oY9mTlPnC626POXm5FHlX2BscA1SClUAVTaQzGQm1-k&currency=EUR"></script>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="video-side">
+    <div class="video-placeholder" id="videoArea"></div>
+    <button class="replay-btn" id="replayBtn" title="Rivedi il video">↻</button>
+  </div>
+
+  <div class="info-side">
+    <button class="close" onclick="window.location.href='index.html#products'">✕</button>
+
+    <div class="info-scroll">
+      <div class="product-header">
+        <div class="product-icon" id="productIcon">🤖</div>
+        <div>
+          <h1 id="productName">Nome agente</h1>
+          <p class="tagline" id="productTagline">Tagline</p>
+        </div>
+      </div>
+
+      <p class="description" id="productDesc">Descrizione dell'agente.</p>
+
+      <div class="section-card">
+        <h3 id="howLabel">Come funziona</h3>
+        <ul id="howList"></ul>
+      </div>
+
+      <div class="section-card">
+        <h3 id="needLabel">Cosa serve</h3>
+        <ul id="needList"></ul>
+      </div>
+    </div>
+
+    <div class="bottom-bar">
+      <div class="price-block">
+        <div class="price" id="productPrice">€0</div>
+        <div class="price-label" id="productLabel">Una tantum</div>
+      </div>
+
+      <div class="actions">
+        <a href="atlas.html" class="btn btn-chat" id="chatBtn">
+          <span class="btn-chat-inner">
+            <div class="atlas-water"></div>
+            <img src="atlas-logo.png" alt="" class="atlas-icon">
+            <img src="atlas-logo.png" alt="" class="atlas-icon">
+            <img src="atlas-logo.png" alt="" class="atlas-icon">
+            <img src="atlas-logo.png" alt="" class="atlas-icon">
+            <img src="atlas-logo.png" alt="" class="atlas-icon">
+            <img src="atlas-logo.png" alt="" class="atlas-icon">
+            <img src="atlas-logo.png" alt="" class="atlas-icon">
+            <img src="atlas-logo.png" alt="" class="atlas-icon">
+            <span class="btn-chat-label">Chat with Atlas</span>
+          </span>
+        </a>
+        <button class="btn btn-buy" id="buyBtn">Buy Now</button>
+        <div id="paypal-button-container" style="margin-top:6px;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const SUPABASE_URL = "https://jrerstiidlckirwsrwxb.supabase.co";
+  const SUPABASE_ANON_KEY = "sb_publishable_ocpocdr5RJt52INjxHFSFg_1m95AAhp";
+  let mSupabase = null;
+  try { mSupabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); } catch (e) { console.error(e); }
+
+  async function getCurrentSession() {
+    if (!mSupabase) return null;
+    const { data: { session } } = await mSupabase.auth.getSession();
+    return session;
+  }
+
+  async function getPurchasedAgents(authUserId) {
+    const { data } = await mSupabase
+      .from('maix_users')
+      .select('purchased_agents')
+      .eq('auth_user_id', authUserId)
+      .maybeSingle();
+    return data?.purchased_agents || [];
+  }
+
+  async function recordPurchase(authUserId, agentId) {
+    const current = await getPurchasedAgents(authUserId);
+    if (current.includes(agentId)) return; // già registrato, non duplichiamo
+    const updated = [...current, agentId];
+    await mSupabase.from('maix_users').update({ purchased_agents: updated }).eq('auth_user_id', authUserId);
+  }
+
+  function priceTier(price) {
+    if (price === 'Gratis') return 0;
+    const num = parseFloat(price.replace('€', ''));
+    if (num <= 60) return 1;
+    if (num <= 100) return 2;
+    return 3;
+  }
+
+  const PRODUCTS = {
+    tidydesk: {
+      name: "TidyDesk",
+      icon: "🗂️",
+      tagline: "Il primo passo, senza rischio",
+      desc: "Ordina e rinomina i file del tuo computer in automatico, senza muovere un dito.",
+      price: "Gratis",
+      label: "Sempre incluso",
+      chips: ["Nessuna configurazione", "Funziona offline", "Pronto in 2 minuti"],
+      how: [
+        "Scegli la cartella da ordinare",
+        "TidyDesk analizza i file e li raggruppa per tipo",
+        "Rinomina e sistema tutto in automatico, ogni volta che lo avvii"
+      ],
+      need: ["Niente — funziona da solo, appena scaricato"],
+      driveLink: "tidydesk.html"
+    },
+    nudgebot: {
+      name: "NudgeBot",
+      icon: "✉️",
+      tagline: "Trova clienti, anche mentre dormi",
+      desc: "Trova nuovi contatti e manda email automatiche con follow-up, finché non ottiene risposta.",
+      price: "€60",
+      label: "Una tantum",
+      chips: ["Email automatiche", "Follow-up smart", "Ricerca contatti"],
+      how: [
+        "Raccogli informazioni sui contatti che vuoi raggiungere",
+        "NudgeBot li organizza e prepara l'email iniziale",
+        "Se non rispondono, manda follow-up automatici nei giorni successivi"
+      ],
+      need: ["Un account Gmail", "Un account Google", "Un foglio Google Sheets"],
+      driveLink: "https://drive.google.com/INSERISCI-LINK-NUDGEBOT"
+    },
+    replybuddy: {
+      name: "ReplyBuddy",
+      icon: "💬",
+      tagline: "Risponde ai clienti come faresti tu",
+      desc: "Risponde ai tuoi clienti come faresti tu e genera preventivi pronti durante la chat.",
+      price: "€120",
+      label: "Una tantum",
+      chips: ["Risposte 24/7", "Preventivi automatici", "Tono personalizzato"],
+      how: [
+        "Carichi le informazioni sul tuo business e le FAQ comuni",
+        "ReplyBuddy risponde ai clienti con il tuo tono di voce",
+        "Se chiedono un prezzo, genera subito un preventivo in PDF"
+      ],
+      need: ["Informazioni sul tuo business e FAQ", "Un account gratuito su Groq"],
+      driveLink: "https://drive.google.com/INSERISCI-LINK-REPLYBUDDY"
+    },
+    bookeasy: {
+      name: "BookEasy",
+      icon: "📅",
+      tagline: "Appuntamenti in ordine, senza pensieri",
+      desc: "Manda un recap disordinato dei tuoi appuntamenti, lui li fissa tutti sul calendario.",
+      price: "€100",
+      label: "Una tantum",
+      chips: ["Capisce testo libero", "Niente sovrapposizioni", "Calendario sempre aggiornato"],
+      how: [
+        "Scrivi su Telegram il recap dei tuoi appuntamenti, anche disordinato",
+        "BookEasy interpreta date, nomi e orari",
+        "Fissa tutto su Google Calendar, evitando doppie prenotazioni"
+      ],
+      need: ["Un account Google (per il Calendario)", "Un account Telegram"],
+      driveLink: "https://drive.google.com/INSERISCI-LINK-BOOKEASY"
+    },
+    agentcheck: {
+      name: "AgentCheck",
+      icon: "📊",
+      tagline: "Tutto sotto controllo, in un solo posto",
+      desc: "Mostra in un unico posto come stanno andando tutti i tuoi agenti acquistati.",
+      price: "Gratis",
+      label: "Con 2 o più agenti",
+      chips: ["Stato in tempo reale", "Un solo posto", "Zero sorprese"],
+      how: [
+        "Si attiva automaticamente quando acquisti 2 o più agenti",
+        "Controlla che ogni bot stia funzionando correttamente",
+        "Ti avvisa se qualcosa si ferma o ha bisogno di attenzione"
+      ],
+      need: ["Almeno 2 agenti Maix attivi"],
+      driveLink: "https://drive.google.com/INSERISCI-LINK-AGENTCHECK"
+    }
+  };
+
+  const params = new URLSearchParams(window.location.search);
+  const id = params.get('agent') || 'tidydesk';
+  const p = PRODUCTS[id] || PRODUCTS.tidydesk;
+
+  document.getElementById('productName').textContent = p.name;
+  document.getElementById('productTagline').textContent = p.tagline;
+  document.getElementById('productIcon').textContent = p.icon;
+  document.getElementById('productDesc').textContent = p.desc;
+  document.getElementById('productPrice').textContent = p.price;
+  document.getElementById('productLabel').textContent = p.label;
+
+  document.getElementById('howList').innerHTML = p.how.map(h => `<li>${h}</li>`).join('');
+  document.getElementById('needList').innerHTML = p.need.map(n => `<li>${n}</li>`).join('');
+
+  // Carichiamo il video introduttivo se esiste sul server (intro-<id>.mp4),
+  // altrimenti resta il placeholder vuoto (sfondo vetro liquido, niente testo).
+  // Inseriamo subito il <video> vero (non un test preliminare separato):
+  // dimezza il tempo prima che parta, perché il browser scarica una volta
+  // sola, non due.
+  (() => {
+    const videoUrl = `intro-${id}.mp4`;
+    const videoArea = document.getElementById('videoArea');
+    videoArea.outerHTML = `<video id="introVideo" src="${videoUrl}" autoplay muted playsinline preload="auto"></video>`;
+
+    const introVideo = document.getElementById('introVideo');
+    const replayBtn = document.getElementById('replayBtn');
+
+    introVideo.addEventListener('ended', () => {
+      replayBtn.classList.add('visible');
+    });
+    introVideo.addEventListener('error', () => {
+      // Nessun video per questo prodotto: il video sparisce, resta solo
+      // lo sfondo vetro liquido dietro, senza errori visibili all'utente.
+      introVideo.style.display = 'none';
+    });
+    replayBtn.addEventListener('click', () => {
+      replayBtn.classList.remove('visible');
+      introVideo.currentTime = 0;
+      introVideo.play();
+    });
+  })();
+
+  document.getElementById('buyBtn').classList.add(`price-tier-${priceTier(p.price)}`);
+
+  const isFree = p.price === 'Gratis' || id === 'agentcheck';
+
+  if (id === 'agentcheck') {
+    // AgentCheck richiede DAVVERO 2 o più agenti acquistati: controlliamo
+    // sul database prima di permettere il download, non basta che sia "gratis".
+    document.getElementById('buyBtn').addEventListener('click', async () => {
+      const session = await getCurrentSession();
+      if (!session) {
+        alert('Devi accedere al tuo account Maix per usare AgentCheck.');
+        window.location.href = 'login.html';
+        return;
+      }
+      const purchased = await getPurchasedAgents(session.user.id);
+      if (purchased.length < 2) {
+        alert(`AgentCheck si attiva solo con 2 o più agenti acquistati. Al momento ne hai ${purchased.length}. Acquista altri agenti per sbloccarlo!`);
+        return;
+      }
+      window.open(p.driveLink, '_blank');
+    });
+  } else if (isFree) {
+    document.getElementById('buyBtn').addEventListener('click', async () => {
+      // Se l'utente è loggato, registriamo anche il download gratuito
+      // (utile per il test temporaneo di Atlas Code con TidyDesk).
+      const session = await getCurrentSession();
+      if (session) {
+        await recordPurchase(session.user.id, id);
+      }
+      window.open(p.driveLink, '_blank');
+    });
+  } else {
+    // Per acquistare un agente a pagamento bisogna essere loggati: altrimenti
+    // non sapremmo a quale account associare l'acquisto, e si perderebbe
+    // tutto subito dopo il pagamento.
+    (async () => {
+      const session = await getCurrentSession();
+      if (!session) {
+        document.getElementById('buyBtn').textContent = 'Accedi per acquistare';
+        document.getElementById('buyBtn').addEventListener('click', () => {
+          window.location.href = 'login.html';
+        });
+        return;
+      }
+
+      document.getElementById('buyBtn').style.display = 'none';
+
+      paypal.Buttons({
+        style: { layout: 'horizontal', color: 'gold', shape: 'pill', label: 'paypal', height: 48 },
+
+        createOrder: async () => {
+          const res = await fetch('/.netlify/functions/paypal-create-order', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ productName: p.name, price: parseFloat(p.price.replace('€','')).toFixed(2) })
+          });
+          const data = await res.json();
+          if (!data.id) {
+            console.error('Errore creazione ordine:', data);
+            alert('Non è stato possibile avviare il pagamento, riprova.');
+            throw new Error('Ordine PayPal non creato');
+          }
+          return data.id;
+        },
+
+        onApprove: async (data) => {
+          const res = await fetch('/.netlify/functions/paypal-capture-order', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ orderID: data.orderID, productName: p.name })
+          });
+          const result = await res.json();
+          if (result.success) {
+            // FONDAMENTALE: salviamo davvero l'acquisto, altrimenti finisce
+            // tutto qui e l'agente non comparirà mai negli acquisti dell'utente.
+            await recordPurchase(session.user.id, id);
+
+            document.getElementById('paypal-button-container').innerHTML = `
+              <div style="text-align:center; padding:14px 0;">
+                <p style="font-size:14px; color:var(--ink-soft); margin-bottom:10px;">Pagamento completato 🎉</p>
+                <a href="${p.driveLink}" target="_blank" class="btn btn-buy price-tier-${priceTier(p.price)}" style="display:block; text-decoration:none;">⬇️ Scarica ${p.name}</a>
+              </div>`;
+          } else {
+            alert('Il pagamento non è andato a buon fine, riprova.');
+          }
+        },
+
+        onError: (err) => {
+          console.error('Errore PayPal:', err);
+          alert('Si è verificato un errore con PayPal, riprova.');
+        }
+
+      }).render('#paypal-button-container');
+    })();
+  }
+
+  // Traduzione automatica
+  const lang = (navigator.language || 'it').slice(0,2) === 'it' ? 'it' : 'en';
+  if (lang === 'en') {
+    document.documentElement.lang = 'en';
+    document.getElementById('howLabel').textContent = 'How it works';
+    document.getElementById('needLabel').textContent = 'What you need';
+    document.querySelector('#chatBtn .btn-chat-label').textContent = 'Chat with Atlas';
+    document.getElementById('buyBtn').textContent = isFree ? 'Download' : 'Buy Now';
+    if (!isFree) document.getElementById('productLabel').textContent = 'One-time';
+    else { document.getElementById('productPrice').textContent = 'Free'; document.getElementById('productLabel').textContent = 'Always included'; }
+  } else {
+    document.querySelector('#chatBtn .btn-chat-label').textContent = 'Chat con Atlas';
+    document.getElementById('buyBtn').textContent = isFree ? 'Download' : 'Acquista';
+  }
+</script>
+
+</body>
+</html>

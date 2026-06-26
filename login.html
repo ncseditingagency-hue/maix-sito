@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/png" href="/maix-logo.png">
+<title>Accedi — Maix</title>
+<style>
+  :root {
+    --ink: #14141a;
+    --ink-soft: #5a5a66;
+    --line: #ececf1;
+    --cyan: #4fd8ff;
+    --violet: #9a7bff;
+    --grad: linear-gradient(135deg, var(--cyan), var(--violet));
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    height: 100%;
+    font-family: -apple-system, "Inter", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    color: var(--ink);
+  }
+  body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background:
+      radial-gradient(circle at 25% 20%, rgba(79,216,255,0.14), transparent 45%),
+      radial-gradient(circle at 80% 80%, rgba(154,123,255,0.16), transparent 50%),
+      #ffffff;
+  }
+
+  .card {
+    width: 100%;
+    max-width: 380px;
+    padding: 48px 36px;
+    text-align: center;
+    animation: fadeUp .5s ease both;
+  }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(14px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* CONFERMA EMAIL — card "liquid glass" */
+  .glass-confirm {
+    width: 100%;
+    max-width: 380px;
+    padding: 44px 34px;
+    text-align: center;
+    border-radius: 28px;
+    background: rgba(255,255,255,0.55);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border: 1px solid rgba(255,255,255,0.8);
+    box-shadow:
+      0 20px 60px rgba(120,100,200,0.18),
+      inset 0 1px 0 rgba(255,255,255,0.9);
+    animation: fadeUp .6s cubic-bezier(.2,.8,.2,1) both;
+    position: relative;
+    overflow: hidden;
+  }
+  .glass-confirm::before {
+    content: "";
+    position: absolute;
+    top: -50%; left: -20%;
+    width: 140%; height: 140%;
+    background: radial-gradient(circle at 30% 20%, rgba(79,216,255,0.25), transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(154,123,255,0.25), transparent 55%);
+    animation: glassDrift 6s ease-in-out infinite;
+    pointer-events: none;
+  }
+  @keyframes glassDrift {
+    0%, 100% { transform: translate(0,0) scale(1); }
+    50% { transform: translate(2%, -2%) scale(1.05); }
+  }
+  .glass-icon {
+    width: 64px; height: 64px;
+    margin: 0 auto 18px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, rgba(79,216,255,0.35), rgba(154,123,255,0.35));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 28px;
+    position: relative;
+    z-index: 1;
+    box-shadow: 0 8px 24px rgba(120,100,200,0.25), inset 0 1px 2px rgba(255,255,255,0.6);
+  }
+  .glass-confirm h2 {
+    position: relative; z-index: 1;
+    font-size: 20px;
+    font-weight: 600;
+    margin: 0 0 8px;
+    letter-spacing: -0.01em;
+  }
+  .glass-confirm p {
+    position: relative; z-index: 1;
+    font-size: 14px;
+    color: var(--ink-soft);
+    margin: 0 0 26px;
+    line-height: 1.5;
+  }
+  .glass-btn {
+    position: relative; z-index: 1;
+    width: 100%;
+    padding: 14px 20px;
+    border-radius: 999px;
+    border: 1px solid rgba(255,255,255,0.6);
+    background: linear-gradient(135deg, rgba(79,216,255,0.85), rgba(154,123,255,0.85));
+    color: white;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 10px 30px rgba(120,100,200,0.35), inset 0 1px 1px rgba(255,255,255,0.5);
+    transition: transform .15s ease, box-shadow .15s ease;
+  }
+  .glass-btn:hover { transform: translateY(-1px); box-shadow: 0 14px 36px rgba(120,100,200,0.4); }
+  .glass-btn:active { transform: scale(0.98); }
+
+  /* SELETTORE AVATAR — stile Liquid Glass / iOS / SaaS pop */
+  .avatar-grid-card {
+    position: relative;
+    z-index: 1;
+    background: rgba(255,255,255,0.45);
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    border: 1px solid rgba(255,255,255,0.7);
+    border-radius: 22px;
+    padding: 12px;
+    margin-bottom: 16px;
+    box-shadow: inset 0 1px 1px rgba(255,255,255,0.8), 0 8px 24px rgba(120,100,200,0.10);
+  }
+  .avatar-pick-wrap {
+    position: relative;
+    border-radius: 16px;
+    overflow: hidden;
+    cursor: pointer;
+    aspect-ratio: 1;
+    background: rgba(255,255,255,0.5);
+    box-shadow: 0 2px 8px rgba(80,70,140,0.10);
+    transition: transform .22s cubic-bezier(.34,1.56,.64,1), box-shadow .22s ease;
+  }
+  .avatar-pick-wrap:hover {
+    transform: scale(1.08) translateY(-2px);
+    box-shadow: 0 10px 22px rgba(120,100,200,0.28);
+  }
+  .avatar-pick {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: filter .2s ease;
+  }
+  .avatar-pick-wrap::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 16px;
+    border: 2.5px solid transparent;
+    transition: border-color .2s ease, box-shadow .2s ease;
+    pointer-events: none;
+  }
+  .avatar-pick-wrap.avatar-pick-selected::after {
+    border-color: #fff;
+    box-shadow: 0 0 0 3px var(--violet), 0 0 16px rgba(154,123,255,0.6);
+  }
+  .avatar-pick-wrap.avatar-pick-selected {
+    transform: scale(1.1) translateY(-3px);
+  }
+  .avatar-pick-wrap.avatar-pick-selected .checkmark {
+    opacity: 1;
+    transform: scale(1);
+  }
+  .checkmark {
+    position: absolute;
+    top: 4px; right: 4px;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--cyan), var(--violet));
+    color: #fff;
+    font-size: 11px;
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0;
+    transform: scale(0.4);
+    transition: opacity .2s ease, transform .2s cubic-bezier(.34,1.56,.64,1);
+    box-shadow: 0 2px 6px rgba(120,100,200,0.4);
+  }
+
+  .logo-wrap {
+    width: 64px;
+    height: 64px;
+    margin: 0 auto 22px;
+    position: relative;
+  }
+  .logo-glow {
+    position: absolute;
+    inset: -16px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(154,123,255,0.25), transparent 70%);
+    filter: blur(6px);
+  }
+  .logo-wrap img {
+    position: relative;
+    width: 64px;
+    height: 64px;
+    z-index: 1;
+  }
+
+  h1 {
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    margin: 0 0 8px;
+  }
+  p.sub {
+    font-size: 14.5px;
+    color: var(--ink-soft);
+    margin: 0 0 32px;
+  }
+
+  .google-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 13px 20px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: #fff;
+    font-size: 14.5px;
+    font-weight: 600;
+    color: var(--ink);
+    cursor: pointer;
+    transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+  }
+  .google-btn:hover {
+    box-shadow: 0 6px 20px rgba(0,0,0,0.06);
+    border-color: #d8d6e8;
+  }
+  .google-btn:active { transform: scale(0.98); }
+  .google-btn svg { width: 18px; height: 18px; }
+
+  .terms {
+    font-size: 12px;
+    color: var(--ink-soft);
+    margin-top: 24px;
+    line-height: 1.5;
+  }
+  .terms a { color: var(--ink-soft); text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div class="logo-wrap">
+    <div class="logo-glow"></div>
+    <img src="maix-logo.png" alt="Maix">
+  </div>
+
+  <h1>Accedi a Maix</h1>
+  <p class="sub">Gestisci i tuoi agenti AI in un unico posto.</p>
+
+  <form id="emailForm">
+    <input
+      type="email"
+      id="emailInput"
+      required
+      placeholder="latua@email.com"
+      style="width:100%; padding:13px 16px; border-radius:999px; border:1px solid var(--line); font-size:14.5px; margin-bottom:12px; outline:none;"
+    >
+    <input
+      type="password"
+      id="passwordInput"
+      required
+      minlength="6"
+      placeholder="Password (minimo 6 caratteri)"
+      style="width:100%; padding:13px 16px; border-radius:999px; border:1px solid var(--line); font-size:14.5px; margin-bottom:12px; outline:none;"
+    >
+    <button type="submit" class="google-btn" id="emailSubmitBtn" style="justify-content:center;">
+      🔑 Accedi
+    </button>
+  </form>
+
+  <div style="margin-top:14px; font-size:13.5px; color:var(--ink-soft);">
+    <span id="toggleText">Non hai un account?</span>
+    <a href="#" id="toggleModeLink" style="color:var(--violet); font-weight:600; text-decoration:none;">Registrati</a>
+  </div>
+
+  <div class="terms">
+    Accedendo accetti i <a href="#">Termini</a> e la <a href="#">Privacy</a> di Maix.
+  </div>
+  <div id="statusMsg" style="margin-top:14px; font-size:13px; color:var(--ink-soft); min-height:18px;"></div>
+</div>
+
+<script>
+  const SUPABASE_URL = "https://jrerstiidlckirwsrwxb.supabase.co";
+  const SUPABASE_ANON_KEY = "sb_publishable_ocpocdr5RJt52INjxHFSFg_1m95AAhp";
+
+  const statusMsg = document.getElementById('statusMsg');
+  let supabase = null;
+  let supabaseReady = false;
+
+  // Carichiamo la libreria Supabase con un CDN di riserva: se il primo
+  // non risponde (rete lenta, blocco, CDN giù), proviamo automaticamente
+  // il secondo, invece di restare bloccati per sempre.
+  function loadScript(src) {
+    return new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = src;
+      s.onload = resolve;
+      s.onerror = () => reject(new Error('Impossibile caricare ' + src));
+      document.head.appendChild(s);
+    });
+  }
+
+  async function initSupabase() {
+    const sources = [
+      'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js',
+      'https://unpkg.com/@supabase/supabase-js@2.45.4/dist/umd/supabase.js'
+    ];
+
+    for (const src of sources) {
+      try {
+        await loadScript(src);
+        if (window.supabase && typeof window.supabase.createClient === 'function') {
+          supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+          supabaseReady = true;
+          return;
+        }
+      } catch (err) {
+        console.warn('CDN fallito, provo il successivo:', src, err.message);
+      }
+    }
+    console.error('Nessun CDN ha funzionato: impossibile caricare Supabase.');
+  }
+
+  const supabaseLoadingPromise = initSupabase();
+</script>
+
+<script>
+  const lang = (navigator.language || 'it').slice(0,2) === 'it' ? 'it' : 'en';
+  if (lang === 'en') {
+    document.documentElement.lang = 'en';
+    document.querySelector('h1').textContent = "Sign in to Maix";
+    document.querySelector('.sub').textContent = "Manage all your AI agents in one place.";
+    document.getElementById('emailSubmitBtn').textContent = "🔑 Sign in";
+    document.getElementById('emailInput').placeholder = "you@email.com";
+    document.getElementById('passwordInput').placeholder = "Password (min. 6 characters)";
+    document.getElementById('toggleText').textContent = "Don't have an account?";
+    document.getElementById('toggleModeLink').textContent = "Sign up";
+    document.querySelector('.terms').innerHTML = 'By signing in you agree to Maix\'s <a href="#">Terms</a> and <a href="#">Privacy Policy</a>.';
+  }
+
+  let isSignupMode = false;
+
+  document.getElementById('toggleModeLink').addEventListener('click', (e) => {
+    e.preventDefault();
+    isSignupMode = !isSignupMode;
+    const submitBtn = document.getElementById('emailSubmitBtn');
+    const toggleText = document.getElementById('toggleText');
+    const toggleLink = document.getElementById('toggleModeLink');
+    if (isSignupMode) {
+      submitBtn.textContent = lang === 'it' ? '✨ Crea account' : '✨ Create account';
+      toggleText.textContent = lang === 'it' ? 'Hai già un account?' : 'Already have an account?';
+      toggleLink.textContent = lang === 'it' ? 'Accedi' : 'Sign in';
+    } else {
+      submitBtn.textContent = lang === 'it' ? '🔑 Accedi' : '🔑 Sign in';
+      toggleText.textContent = lang === 'it' ? 'Non hai un account?' : "Don't have an account?";
+      toggleLink.textContent = lang === 'it' ? 'Registrati' : 'Sign up';
+    }
+    statusMsg.textContent = '';
+  });
+
+  document.getElementById('emailForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = document.getElementById('emailInput').value.trim();
+    const password = document.getElementById('passwordInput').value;
+    if (!email || !password) return;
+
+    const btn = document.getElementById('emailSubmitBtn');
+    btn.disabled = true;
+    statusMsg.textContent = isSignupMode
+      ? (lang === 'it' ? 'Creo il tuo account...' : 'Creating your account...')
+      : (lang === 'it' ? 'Accesso in corso...' : 'Signing in...');
+
+    // Timeout di sicurezza: se Supabase non risponde entro 12 secondi
+    // (es. CDN bloccato, problema di rete), non restiamo bloccati per sempre.
+    const timeout = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('TIMEOUT')), 12000)
+    );
+
+    try {
+      await Promise.race([supabaseLoadingPromise, timeout]);
+
+      if (!supabaseReady || !supabase) {
+        throw new Error('LIBRERIA_NON_CARICATA');
+      }
+
+      const authCall = isSignupMode
+        ? supabase.auth.signUp({ email, password })
+        : supabase.auth.signInWithPassword({ email, password });
+
+      const result = await Promise.race([authCall, timeout]);
+
+      if (result.error) {
+        // Se "accedi" fallisce perché l'account non esiste ancora, suggeriamo la registrazione
+        if (!isSignupMode && /invalid login credentials/i.test(result.error.message)) {
+          statusMsg.textContent = lang === 'it'
+            ? '⚠️ Email o password errati. Se non hai un account, clicca "Registrati" sotto.'
+            : '⚠️ Wrong email or password. If you don\'t have an account, click "Sign up" below.';
+        } else {
+          statusMsg.textContent = (lang === 'it' ? 'Errore: ' : 'Error: ') + result.error.message;
+        }
+        btn.disabled = false;
+        return;
+      }
+
+      if (isSignupMode && result.data?.session) {
+        // Registrazione riuscita con sessione già attiva (email confirmation disattivata)
+        await completeSignIn(result.data.session);
+      } else if (isSignupMode) {
+        statusMsg.textContent = lang === 'it'
+          ? '✅ Account creato! Ora accedi con la stessa email e password.'
+          : '✅ Account created! Now sign in with the same email and password.';
+        btn.disabled = false;
+      } else if (result.data?.session) {
+        await completeSignIn(result.data.session);
+      }
+
+    } catch (err) {
+      btn.disabled = false;
+      if (err.message === 'TIMEOUT') {
+        statusMsg.textContent = lang === 'it'
+          ? '⚠️ Il server non risponde. Controlla la connessione e riprova.'
+          : '⚠️ The server isn\'t responding. Check your connection and try again.';
+      } else if (err.message === 'LIBRERIA_NON_CARICATA') {
+        statusMsg.textContent = lang === 'it'
+          ? '⚠️ Non riesco a caricare il sistema di accesso. Disattiva eventuali blocco-pubblicità e ricarica la pagina.'
+          : '⚠️ Can\'t load the sign-in system. Disable any ad-blocker and reload the page.';
+      } else {
+        statusMsg.textContent = (lang === 'it' ? 'Errore imprevisto: ' : 'Unexpected error: ') + err.message;
+      }
+    }
+  });
+
+  // Dopo il redirect da Google, Supabase torna qui con la sessione già attiva.
+  // Controlliamo se l'utente è loggato, e se è la prima volta gli creiamo
+  // la riga nel database + mandiamo la notifica Telegram a fp.
+  async function handleAuthState() {
+    // Aspettiamo che la libreria Supabase abbia finito di caricarsi
+    // (necessario ora che il caricamento è asincrono con CDN di riserva).
+    await supabaseLoadingPromise;
+    if (!supabaseReady || !supabase) {
+      statusMsg.textContent = lang === 'it'
+        ? '⚠️ Non riesco a verificare l\'accesso. Ricarica la pagina.'
+        : '⚠️ Can\'t verify sign-in. Please reload the page.';
+      return;
+    }
+
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+      await completeSignIn(session);
+      return;
+    }
+
+    // Rete di sicurezza: se il link appena cliccato non è stato ancora
+    // elaborato al momento del controllo sopra, ascoltiamo l'evento
+    // di accesso riuscito e procediamo appena arriva.
+    supabase.auth.onAuthStateChange((event, newSession) => {
+      if (event === 'SIGNED_IN' && newSession) {
+        completeSignIn(newSession);
+      }
+    });
+  }
+
+  let signInHandled = false;
+
+  async function completeSignIn(session) {
+    if (signInHandled) return;
+    signInHandled = true;
+
+    const user = session.user;
+    statusMsg.textContent = lang === 'it' ? 'Accesso riuscito, un secondo...' : 'Signed in, one moment...';
+
+    // Controlla se l'utente esiste già nella tabella maix_users
+    const { data: existing, error: selectError } = await supabase
+      .from('maix_users')
+      .select('id, notified_signup')
+      .eq('auth_user_id', user.id)
+      .maybeSingle();
+
+    if (selectError) {
+      console.error('Errore lettura utente:', selectError);
+    }
+
+    let isBrandNew = false;
+
+    if (!existing) {
+      isBrandNew = true;
+      // Prima volta: creiamo la riga
+      const { error: insertError } = await supabase.from('maix_users').insert({
+        auth_user_id: user.id,
+        email: user.email,
+        full_name: null,
+        avatar_url: null,
+        notified_signup: true
+      });
+      if (insertError) {
+        console.error('Errore creazione utente:', insertError);
+      } else {
+        // Notifica Telegram SOLO per le registrazioni nuove
+        fetch('/.netlify/functions/notify-signup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: user.email, fullName: null })
+        }).then(res => {
+          if (!res.ok) console.error('notify-signup ha risposto con errore:', res.status);
+        }).catch(err => console.error('notify-signup non raggiungibile:', err));
+      }
+    } else {
+      console.log('Utente già esistente, nessuna notifica Telegram (è normale, non è una nuova registrazione).');
+    }
+
+    if (isBrandNew) {
+      showPersonalizeStep(user);
+    } else {
+      showConfirmStep();
+    }
+  }
+
+  const AVATAR_OPTIONS = [
+    'avatars/avatar1.jpeg', 'avatars/avatar2.jpeg', 'avatars/avatar3.jpeg', 'avatars/avatar4.jpeg',
+    'avatars/avatar5.jpeg', 'avatars/avatar6.jpeg', 'avatars/avatar7.jpeg', 'avatars/avatar8.jpeg'
+  ];
+
+  function showPersonalizeStep(user) {
+    let selectedAvatar = AVATAR_OPTIONS[Math.floor(Math.random() * AVATAR_OPTIONS.length)];
+
+    const gridHtml = AVATAR_OPTIONS.map((url) => `
+      <div class="avatar-pick-wrap${url === selectedAvatar ? ' avatar-pick-selected' : ''}" data-avatar="${url}">
+        <img src="${url}" class="avatar-pick" loading="lazy">
+        <div class="checkmark">✓</div>
+      </div>
+    `).join('');
+
+    document.querySelector('.card').outerHTML = `
+      <div class="glass-confirm">
+        <div class="glass-icon" id="avatarPreviewWrap" style="background:none; padding:0; overflow:hidden; box-shadow:0 10px 30px rgba(120,100,200,0.35), inset 0 1px 2px rgba(255,255,255,0.6);">
+          <img id="avatarPreview" src="${selectedAvatar}" style="width:100%; height:100%; object-fit:cover;">
+        </div>
+        <h2>${lang === 'it' ? 'Benvenuto su Maix!' : 'Welcome to Maix!'}</h2>
+        <p>${lang === 'it' ? 'Scegli un nome e un avatar per il tuo profilo.' : 'Pick a name and an avatar for your profile.'}</p>
+        <input id="nameInput" type="text" placeholder="${lang === 'it' ? 'Il tuo nome' : 'Your name'}"
+          style="width:100%; padding:12px 16px; border-radius:999px; border:1px solid rgba(255,255,255,0.6); background:rgba(255,255,255,0.6); font-size:14.5px; margin-bottom:14px; outline:none; position:relative; z-index:1; text-align:center;">
+        <div class="avatar-grid-card">
+          <div id="avatarGrid" style="display:grid; grid-template-columns:repeat(4, 1fr); gap:10px;">
+            ${gridHtml}
+          </div>
+        </div>
+        <button class="glass-btn" id="continueBtn">${lang === 'it' ? 'Continua su Maix →' : 'Continue to Maix →'}</button>
+      </div>
+    `;
+
+    document.querySelectorAll('.avatar-pick-wrap').forEach(wrap => {
+      wrap.addEventListener('click', () => {
+        selectedAvatar = wrap.dataset.avatar;
+        document.getElementById('avatarPreview').src = selectedAvatar;
+        document.querySelectorAll('.avatar-pick-wrap').forEach(el => el.classList.remove('avatar-pick-selected'));
+        wrap.classList.add('avatar-pick-selected');
+      });
+    });
+
+    document.getElementById('continueBtn').addEventListener('click', async () => {
+      const name = document.getElementById('nameInput').value.trim() || null;
+
+      await supabase.from('maix_users')
+        .update({ full_name: name, avatar_url: selectedAvatar })
+        .eq('auth_user_id', user.id);
+
+      sessionStorage.setItem('maix_just_logged_in', '1');
+      window.location.href = 'index.html';
+    });
+  }
+
+  function showConfirmStep() {
+    document.querySelector('.card').outerHTML = `
+      <div class="glass-confirm">
+        <div class="glass-icon">✅</div>
+        <h2>${lang === 'it' ? 'Bentornato!' : 'Welcome back!'}</h2>
+        <p>${lang === 'it' ? 'Sei dentro. Bentornato su Maix.' : 'You\'re in. Welcome back to Maix.'}</p>
+        <button class="glass-btn" id="continueBtn">${lang === 'it' ? 'Continua su Maix →' : 'Continue to Maix →'}</button>
+      </div>
+    `;
+    document.getElementById('continueBtn').addEventListener('click', () => {
+      sessionStorage.setItem('maix_just_logged_in', '1');
+      window.location.href = 'index.html';
+    });
+  }
+
+  handleAuthState();
+</script>
+
+</body>
+</html>

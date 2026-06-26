@@ -1,0 +1,25 @@
+[build]
+  functions = "netlify/functions"
+  publish = "."
+
+# Permette esplicitamente l'uso del microfono (per Atlas) su tutto il sito.
+# Senza questo, alcuni browser/CDN bloccano la richiesta di permesso
+# del microfono in automatico, senza nemmeno mostrare il popup.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Permissions-Policy = "microphone=(self), camera=(self)"
+
+# Forza il download corretto di tidydesk.py, evitando che venga
+# intercettato da eventuali redirect o trattato come pagina HTML
+[[headers]]
+  for = "/tidydesk.py"
+  [headers.values]
+    Content-Type = "application/octet-stream"
+    Content-Disposition = "attachment; filename=tidydesk.py"
+    Cache-Control = "no-cache"
+
+[[redirects]]
+  from = "/.netlify/functions/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
