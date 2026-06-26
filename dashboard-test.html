@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BookEasy — Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root {
+    --ink: #14141a; --ink-soft: #5a5a66; --line: #ececf1;
+    --cyan: #4fd8ff; --violet: #9a7bff;
+    --grad: linear-gradient(135deg, var(--cyan), var(--violet));
+    --glass: rgba(255,255,255,0.6); --bg: #f6f5fb;
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; min-height:100vh; background:var(--bg); font-family:-apple-system,"Inter",sans-serif; color:var(--ink); -webkit-font-smoothing:antialiased; }
+
+  .topbar { display:flex; align-items:center; justify-content:space-between; padding:14px 20px;
+    background:rgba(255,255,255,0.7); backdrop-filter:blur(14px); border-bottom:1px solid var(--line);
+    position:sticky; top:0; z-index:10; }
+  .topbar h1 { font-size:16px; margin:0; }
+  .logout-btn { border:none; background:#f1ecff; color:var(--ink-soft); padding:8px 14px; border-radius:20px; font-size:12.5px; cursor:pointer; }
+
+  .layout { display:grid; grid-template-columns: 1fr 1.1fr; gap:16px; padding:16px 20px; max-width:1100px; margin:0 auto; height:calc(100vh - 60px); }
+  @media (max-width:860px) { .layout { grid-template-columns:1fr; height:auto; } }
+
+  .left-col { display:flex; flex-direction:column; gap:14px; min-height:0; }
+
+  /* CARD STATO (sopra, piccola orizzontale) */
+  .stato-card {
+    background:var(--glass); border:1px solid rgba(255,255,255,0.7); backdrop-filter:blur(16px);
+    border-radius:18px; padding:14px 16px; display:flex; align-items:center; gap:12px;
+    box-shadow:0 4px 18px rgba(100,90,160,0.07); flex-shrink:0;
+  }
+  .stato-logo { width:42px; height:42px; border-radius:13px; background:var(--grad); display:flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0; }
+  .stato-info { flex:1; }
+  .stato-nome { font-weight:600; font-size:14.5px; }
+  .stato-riga { display:flex; align-items:center; gap:6px; font-size:12px; color:var(--ink-soft); margin-top:2px; }
+  .pallino { width:8px; height:8px; border-radius:50%; }
+  .pallino.verde { background:#3fc97a; box-shadow:0 0 6px #3fc97a; }
+  .pallino.rosso { background:#e0466b; box-shadow:0 0 6px #e0466b; }
+  .attiva-btn { background:var(--grad); border:none; color:#fff; padding:7px 14px; border-radius:16px; font-size:11.5px; font-weight:600; cursor:pointer; }
+
+  /* CARD DASHBOARD (sotto, piu alta) */
+  .storico-card {
+    background:var(--glass); border:1px solid rgba(255,255,255,0.7); backdrop-filter:blur(16px);
+    border-radius:18px; padding:16px; flex:1; display:flex; flex-direction:column; min-height:0;
+    box-shadow:0 4px 18px rgba(100,90,160,0.07);
+  }
+  .storico-card h3 { font-size:12px; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-soft); margin:0 0 10px; }
+  .storico-list { flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:8px; }
+  .evento-card { background:rgba(255,255,255,0.55); border:1px solid var(--line); border-radius:13px; padding:10px 12px; display:flex; align-items:center; gap:10px; }
+  .evento-emoji { font-size:18px; }
+  .evento-titolo { font-weight:600; font-size:13px; }
+  .evento-data { font-size:11.5px; color:var(--ink-soft); }
+  .empty { text-align:center; color:var(--ink-soft); font-size:12.5px; padding:20px 0; }
+
+  .recap-bar { display:flex; gap:10px; margin-top:12px; padding-top:12px; border-top:1px solid var(--line); flex-shrink:0; }
+  .recap-box { flex:1; text-align:center; }
+  .recap-num { font-size:20px; font-weight:700; background:var(--grad); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .recap-label { font-size:10.5px; color:var(--ink-soft); margin-top:2px; }
+
+  /* COLONNA DESTRA - CHAT */
+  .chat-col { background:var(--glass); border:1px solid rgba(255,255,255,0.7); backdrop-filter:blur(16px);
+    border-radius:18px; padding:16px; display:flex; flex-direction:column; min-height:0;
+    box-shadow:0 4px 18px rgba(100,90,160,0.07); }
+  .chat-box { flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:10px; padding-bottom:8px; }
+  .msg { max-width:82%; padding:10px 14px; border-radius:16px; font-size:13.5px; line-height:1.45; white-space:pre-wrap; }
+  .msg.user { align-self:flex-end; background:var(--grad); color:#fff; }
+  .msg.assistant { align-self:flex-start; background:rgba(255,255,255,0.7); border:1px solid var(--line); }
+  .msg.suggerimento { align-self:center; background:#fff7e6; border:1px solid #ffe2a8; font-size:12px; color:#8a6300; text-align:center; }
+
+  .confirm-bar { display:flex; gap:8px; margin-top:6px; }
+  .confirm-bar button { flex:1; border:none; padding:10px; border-radius:14px; font-size:13px; font-weight:600; cursor:pointer; }
+  .confirm-yes { background:var(--grad); color:#fff; }
+  .confirm-no { background:#f1ecff; color:var(--ink-soft); }
+
+  .chat-input-row { display:flex; gap:8px; align-items:center; margin-top:10px; flex-shrink:0; }
+  .chat-input-row input[type=text] { flex:1; border:1px solid var(--line); border-radius:20px; padding:11px 16px; font-size:14px; outline:none; }
+  .icon-btn { background:#f1ecff; border:none; width:42px; height:42px; border-radius:50%; font-size:16px; cursor:pointer; flex-shrink:0; }
+  .send-btn { background:var(--grad); border:none; color:#fff; width:42px; height:42px; border-radius:50%; font-size:16px; cursor:pointer; flex-shrink:0; }
+  input[type=file] { display:none; }
+
+  #loginScreen { display:flex; align-items:center; justify-content:center; min-height:100vh; padding:20px; }
+  .login-card { background:var(--glass); border:1px solid rgba(255,255,255,0.7); backdrop-filter:blur(20px); border-radius:20px; padding:28px; width:100%; max-width:360px; box-shadow:0 10px 30px rgba(100,90,160,0.12); }
+  .login-card h2 { margin:0 0 4px; font-size:20px; }
+  .login-card p.sub { color:var(--ink-soft); font-size:13px; margin:0 0 18px; }
+  .login-card input { width:100%; padding:12px 14px; margin-bottom:10px; border:1px solid var(--line); border-radius:12px; font-size:14px; }
+  .login-card button { width:100%; padding:12px; border:none; border-radius:20px; background:var(--grad); color:#fff; font-weight:600; font-size:14px; cursor:pointer; margin-top:6px; }
+  .login-error { color:#e0466b; font-size:12px; margin-top:6px; min-height:16px; }
+
+  .connect-banner { background:var(--grad); color:#fff; padding:12px 14px; border-radius:14px; margin-bottom:10px; font-size:12.5px; display:flex; align-items:center; justify-content:space-between; gap:10px; flex-shrink:0; }
+  .connect-banner button { background:rgba(255,255,255,0.25); border:none; color:#fff; padding:7px 12px; border-radius:14px; font-size:11.5px; cursor:pointer; white-space:nowrap; }
+</style>
+</head>
+<body>
+
+<div id="dashboard" style="display:none;">
+  <div class="topbar">
+    <h1>📅 BookEasy <span style="font-size:11px; background:#fff3cd; color:#8a6300; padding:3px 8px; border-radius:10px; margin-left:6px;">TEST</span></h1>
+    <button class="logout-btn" onclick="resetTest()">Reset test</button>
+  </div>
+
+  <div class="layout">
+    <div class="left-col">
+      <div class="stato-card">
+        <div class="stato-logo">📅</div>
+        <div class="stato-info">
+          <div class="stato-nome">BookEasy</div>
+          <div class="stato-riga"><span class="pallino" id="pallino"></span> <span id="statoTesto">—</span></div>
+        </div>
+        <button class="attiva-btn" id="attivaBtn" style="display:none;" onclick="attivaBot()">Attiva</button>
+      </div>
+
+      <div class="storico-card">
+        <div id="connectBanner" class="connect-banner" style="display:none;">
+          <span>🔗 Collega Google Calendar</span>
+          <button onclick="connectGoogle()">Collega</button>
+        </div>
+        <h3>Ultimi appuntamenti</h3>
+        <div class="storico-list" id="eventiList"></div>
+        <div class="recap-bar">
+          <div class="recap-box"><div class="recap-num" id="numInviati">0</div><div class="recap-label">Inviati in totale</div></div>
+          <div class="recap-box"><div class="recap-num" id="numConfermati">0</div><div class="recap-label">Confermati</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="chat-col">
+      <div class="chat-box" id="chatBox"></div>
+      <div class="chat-input-row">
+        <button class="icon-btn" onclick="document.getElementById('fileInput').click()">📎</button>
+        <input type="file" id="fileInput" accept="image/*,audio/*" onchange="inviaMedia(event)">
+        <input type="text" id="chatInput" placeholder="Scrivi, anche disordinato..." onkeypress="if(event.key==='Enter') sendMessage()">
+        <button class="send-btn" onclick="sendMessage()">➤</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Progetto Supabase NUOVO: dati Book Easy (eventi, chat) - solo questo serve in versione test
+  const SUPABASE_URL = 'https://rtnohzdctwyzqjeungux.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ0bm9oemRjdHd5enFqZXVuZ3V4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0NDk5MjEsImV4cCI6MjA5ODAyNTkyMX0.Rldpi9sR8IDLx8EQ6cguNbSdqVhaNLReKHqibpC6g0Q';
+
+  let clienteId = null;
+  let clienteEmail = null;
+
+  // VERSIONE TEST: niente login, email finta generata/riusata da localStorage del browser
+  async function entraDashboardTest() {
+    let emailTest = localStorage.getItem('bookeasy_test_email');
+    if (!emailTest) {
+      emailTest = 'test-' + Math.random().toString(36).slice(2, 8) + '@maix-test.it';
+      localStorage.setItem('bookeasy_test_email', emailTest);
+    }
+    clienteEmail = emailTest;
+    const res = await fetch(`/.netlify/functions/get-dati?email=${encodeURIComponent(emailTest)}`);
+    const data = await res.json();
+    clienteId = data.cliente.id;
+    document.getElementById('dashboard').style.display = 'block';
+    mostraDati(data);
+  }
+  entraDashboardTest();
+
+  async function caricaDati() {
+    const res = await fetch(`/.netlify/functions/get-dati?email=${encodeURIComponent(clienteEmail)}`);
+    const data = await res.json();
+    mostraDati(data);
+  }
+
+  function mostraDati(data) {
+    const { cliente, eventi, chat, propostaInAttesa } = data;
+
+    document.getElementById('connectBanner').style.display = cliente.google_refresh_token ? 'none' : 'flex';
+
+    const pallino = document.getElementById('pallino');
+    const attivaBtn = document.getElementById('attivaBtn');
+    if (cliente.attivo) {
+      pallino.className = 'pallino verde';
+      document.getElementById('statoTesto').textContent = 'Attivo';
+      attivaBtn.style.display = 'none';
+    } else {
+      pallino.className = 'pallino rosso';
+      document.getElementById('statoTesto').textContent = 'Non attivo';
+      attivaBtn.style.display = 'inline-block';
+    }
+
+    document.getElementById('numInviati').textContent = cliente.tot_appuntamenti_inviati || 0;
+    document.getElementById('numConfermati').textContent = cliente.tot_appuntamenti_confermati || 0;
+
+    const lista = document.getElementById('eventiList');
+    lista.innerHTML = eventi.length
+      ? eventi.map(e => `<div class="evento-card"><div class="evento-emoji">${e.emoji||'📅'}</div><div><div class="evento-titolo">${e.titolo}</div><div class="evento-data">${new Date(e.data_inizio).toLocaleString('it-IT',{dateStyle:'medium',timeStyle:'short'})}</div></div></div>`).join('')
+      : '<div class="empty">Nessun appuntamento ancora</div>';
+
+    const box = document.getElementById('chatBox');
+    if (!box.dataset.init) {
+      box.innerHTML = chat.length ? chat.map(m => `<div class="msg ${m.ruolo}">${esc(m.testo)}</div>`).join('')
+        : `<div class="msg suggerimento">💡 Consiglio: mandami anche audio o foto dei tuoi appuntamenti, li capisco perfettamente e fai prima!</div>`;
+      box.dataset.init = '1';
+      box.scrollTop = box.scrollHeight;
+    }
+
+    if (propostaInAttesa) mostraConferma(propostaInAttesa);
+  }
+
+  function esc(t) { return (t||'').replace(/</g,'&lt;'); }
+
+  function mostraConferma(proposta) {
+    const box = document.getElementById('chatBox');
+    if (document.getElementById('confirmBar-'+proposta.id)) return;
+    box.innerHTML += `<div class="confirm-bar" id="confirmBar-${proposta.id}">
+      <button class="confirm-yes" onclick="confermaProposta('${proposta.id}')">✅ Conferma</button>
+      <button class="confirm-no" onclick="annullaProposta('${proposta.id}')">Annulla</button>
+    </div>`;
+    box.scrollTop = box.scrollHeight;
+  }
+
+  async function confermaProposta(id) {
+    document.getElementById('confirmBar-'+id).remove();
+    const res = await fetch('/.netlify/functions/conferma-proposta', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ proposta_id: id, cliente_id: clienteId })
+    });
+    const data = await res.json();
+    const box = document.getElementById('chatBox');
+    box.innerHTML += `<div class="msg assistant">✅ Fatto! ${data.aggiunti} appuntamento/i aggiunti al calendario.</div>`;
+    box.scrollTop = box.scrollHeight;
+    document.getElementById('dashboard').dataset.refresh = '1';
+    refreshSoloEventi();
+  }
+
+  async function annullaProposta(id) {
+    document.getElementById('confirmBar-'+id).remove();
+  }
+
+  async function refreshSoloEventi() {
+    const box = document.getElementById('chatBox'); box.dataset.init = '1';
+    const res = await fetch(`/.netlify/functions/get-dati?cliente_id=${clienteId}`);
+    const { cliente, eventi } = await res.json();
+    document.getElementById('numInviati').textContent = cliente.tot_appuntamenti_inviati || 0;
+    document.getElementById('numConfermati').textContent = cliente.tot_appuntamenti_confermati || 0;
+    document.getElementById('pallino').className = cliente.attivo ? 'pallino verde' : 'pallino rosso';
+    document.getElementById('statoTesto').textContent = cliente.attivo ? 'Attivo' : 'Non attivo';
+    document.getElementById('attivaBtn').style.display = cliente.attivo ? 'none' : 'inline-block';
+    const lista = document.getElementById('eventiList');
+    lista.innerHTML = eventi.length
+      ? eventi.map(e => `<div class="evento-card"><div class="evento-emoji">${e.emoji||'📅'}</div><div><div class="evento-titolo">${e.titolo}</div><div class="evento-data">${new Date(e.data_inizio).toLocaleString('it-IT',{dateStyle:'medium',timeStyle:'short'})}</div></div></div>`).join('')
+      : '<div class="empty">Nessun appuntamento ancora</div>';
+  }
+
+  async function attivaBot() {
+    await fetch('/.netlify/functions/attiva-bot', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ cliente_id: clienteId }) });
+    refreshSoloEventi();
+  }
+
+  async function sendMessage() {
+    const input = document.getElementById('chatInput');
+    const testo = input.value.trim();
+    if (!testo) return;
+    input.value = '';
+    const box = document.getElementById('chatBox');
+    box.innerHTML += `<div class="msg user">${esc(testo)}</div>`;
+    box.scrollTop = box.scrollHeight;
+
+    const res = await fetch('/.netlify/functions/chat-message', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ cliente_id: clienteId, testo })
+    });
+    const data = await res.json();
+    box.innerHTML += `<div class="msg assistant">${esc(data.risposta||'')}</div>`;
+    box.scrollTop = box.scrollHeight;
+    if (data.richiede_conferma) mostraConferma({ id: data.proposta_id });
+    refreshSoloEventi();
+  }
+
+  async function inviaMedia(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const base64 = await new Promise((res, rej) => {
+      const r = new FileReader();
+      r.onload = () => res(r.result.split(',')[1]);
+      r.onerror = rej;
+      r.readAsDataURL(file);
+    });
+
+    const box = document.getElementById('chatBox');
+    box.innerHTML += `<div class="msg user">📎 ${file.type.startsWith('audio') ? 'Audio inviato' : 'Immagine inviata'}</div>`;
+    box.scrollTop = box.scrollHeight;
+
+    const res = await fetch('/.netlify/functions/chat-message', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ cliente_id: clienteId, media_base64: base64, media_mime: file.type })
+    });
+    const data = await res.json();
+    box.innerHTML += `<div class="msg assistant">${esc(data.risposta||'')}</div>`;
+    box.scrollTop = box.scrollHeight;
+    if (data.richiede_conferma) mostraConferma({ id: data.proposta_id });
+    refreshSoloEventi();
+    event.target.value = '';
+  }
+
+  function resetTest() {
+    localStorage.removeItem('bookeasy_test_email');
+    location.reload();
+  }
+
+  function connectGoogle() {
+    window.location.href = `/.netlify/functions/oauth-start?cliente_id=${clienteId}`;
+  }
+</script>
+
+</body>
+</html>
