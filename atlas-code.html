@@ -583,8 +583,43 @@
       lockChat("👋 Ciao! Sono Atlas Code, ti aiuto a modificare e personalizzare i bot che hai comprato (NudgeBot, ReplyBuddy, BookEasy). Se non hai mai acquistato nessun agente a pagamento, non potrai ancora usarmi — appena ne acquisti uno, torna qui!");
     } else {
       isUnlocked = true;
+      mostraSelezioneBot(purchased);
     }
   }
+
+  // Bottoni liquid glass per scegliere quale bot personalizzare/modificare
+  function mostraSelezioneBot(purchased) {
+    const BOT_INFO = {
+      bookeasy: { label: '📅 BookEasy', prompt: 'Ho comprato BookEasy, voglio configurarlo' },
+      nudgebot: { label: '📨 NudgeBot', prompt: 'Ho comprato NudgeBot, voglio configurarlo' },
+      replybuddy: { label: '💬 ReplyBuddy', prompt: 'Ho comprato ReplyBuddy, voglio configurarlo' },
+    };
+
+    const botDisponibili = purchased.filter(p => BOT_INFO[p]);
+    if (botDisponibili.length === 0) return;
+
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin:20px 0;';
+    wrap.innerHTML = botDisponibili.map(id => `
+      <button class="bot-select-btn" data-prompt="${BOT_INFO[id].prompt}" style="
+        padding:13px 22px; border-radius:20px; border:1px solid rgba(255,255,255,0.3);
+        background:rgba(255,255,255,0.08); backdrop-filter:blur(12px);
+        color:var(--ink); font-size:14px; font-weight:600; cursor:pointer;
+        transition:.2s;
+      ">${BOT_INFO[id].label}</button>
+    `).join('');
+
+    conv.appendChild(wrap);
+    wrap.querySelectorAll('.bot-select-btn').forEach(btn => {
+      btn.addEventListener('mouseenter', () => { btn.style.background = 'rgba(255,224,102,0.15)'; btn.style.transform = 'scale(1.04)'; });
+      btn.addEventListener('mouseleave', () => { btn.style.background = 'rgba(255,255,255,0.08)'; btn.style.transform = 'scale(1)'; });
+      btn.addEventListener('click', () => {
+        wrap.remove();
+        input.value = btn.dataset.prompt;
+        sendMessage();
+      });
+    });
+    conv.scrollTop = conv.scrollHeight;
 
   function lockChat(message) {
     isUnlocked = false;
@@ -770,23 +805,35 @@
     try {
       const config = JSON.parse(match[1]);
       if (mSupabase && currentSession) {
-        await mSupabase.from('bookeasy_configs').upsert({
-          auth_user_id: currentSession.user.id,
-          telegram_chat_id: String(config.telegram_chat_id),
-          calendar_id: config.calendar_id,
-          business_name: config.business_name,
-          business_type: config.business_type,
-          appointment_duration_minutes: config.appointment_duration_minutes || 30,
-          ask_phone: !!config.ask_phone,
-          blocked_hours: config.blocked_hours || null,
-          updated_at: new Date().toISOString()
-        }, { onConflict: 'telegram_chat_id' });
+        await mSupabase.from('maix_users').update({
+          settore: config.settore,
+          formato_calendario: config.formato_calendario,
+          regole_blocco: config.regole_blocco || '',
+        }).eq('auth_user_id', currentSession.user.id);
+
+        // Configurazione salvata: mostriamo il bottone per entrare nella dashboard personale
+        mostraBottoneEntraBookEasy();
       }
     } catch (err) {
       console.error('Errore salvataggio configurazione BookEasy:', err);
     }
 
     return cleanText;
+  }
+
+  function mostraBottoneEntraBookEasy() {
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'display:flex; justify-content:center; margin:18px 0;';
+    wrap.innerHTML = `
+      <a href="dashboard.html" style="
+        display:inline-flex; align-items:center; gap:8px;
+        padding:14px 28px; border-radius:24px;
+        background:linear-gradient(135deg,#4fd8ff,#9a7bff);
+        color:#fff; text-decoration:none; font-weight:700; font-size:14.5px;
+        box-shadow:0 8px 24px rgba(120,100,200,0.35);
+      ">📅 Entra in BookEasy →</a>`;
+    conv.appendChild(wrap);
+    conv.scrollTop = conv.scrollHeight;
   }
 
   function finalizeAtlasRow(row, text) {
