@@ -653,13 +653,11 @@
     });
   } else if (isFree) {
     document.getElementById('buyBtn').addEventListener('click', async () => {
-      // Se l'utente è loggato, registriamo anche il download gratuito
-      // (utile per il test temporaneo di Atlas Code con TidyDesk).
       const session = await getCurrentSession();
       if (session) {
         await recordPurchase(session.user.id, id);
       }
-      window.open(p.driveLink, '_blank');
+      window.location.href = p.driveLink;
     });
   } else {
     // Per acquistare un agente a pagamento bisogna essere loggati: altrimenti
