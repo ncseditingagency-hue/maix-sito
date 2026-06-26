@@ -7,109 +7,122 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root {
-    --ink: #14141a; --ink-soft: #5a5a66; --line: #ececf1;
-    --cyan: #4fd8ff; --violet: #9a7bff;
+    --ink:#14141a; --ink-soft:#5a5a66; --line:#ececf1;
+    --cyan:#4fd8ff; --violet:#9a7bff; --pink:#ff8bd6; --mint:#5be8c0;
     --grad: linear-gradient(135deg, var(--cyan), var(--violet));
-    --glass: rgba(255,255,255,0.6); --bg: #f6f5fb;
+    --grad2: linear-gradient(135deg, var(--violet), var(--pink));
+    --glass: rgba(255,255,255,0.6); --bg:#f6f5fb;
   }
-  * { box-sizing: border-box; }
-  body { margin:0; min-height:100vh; background:var(--bg); font-family:-apple-system,"Inter",sans-serif; color:var(--ink); -webkit-font-smoothing:antialiased; }
+  * { box-sizing:border-box; }
+  body {
+    margin:0; min-height:100vh; font-family:-apple-system,"Inter",sans-serif; color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+    background:
+      radial-gradient(circle at 10% 10%, rgba(79,216,255,0.10), transparent 40%),
+      radial-gradient(circle at 90% 20%, rgba(154,123,255,0.12), transparent 45%),
+      radial-gradient(circle at 50% 90%, rgba(255,139,214,0.08), transparent 45%),
+      var(--bg);
+  }
 
-  .topbar { display:flex; align-items:center; justify-content:space-between; padding:14px 20px;
-    background:rgba(255,255,255,0.7); backdrop-filter:blur(14px); border-bottom:1px solid var(--line);
+  .topbar { display:flex; align-items:center; justify-content:space-between; padding:14px 22px;
+    background:rgba(255,255,255,0.65); backdrop-filter:blur(18px) saturate(180%); border-bottom:1px solid rgba(255,255,255,0.6);
     position:sticky; top:0; z-index:10; }
-  .topbar h1 { font-size:16px; margin:0; }
-  .logout-btn { border:none; background:#f1ecff; color:var(--ink-soft); padding:8px 14px; border-radius:20px; font-size:12.5px; cursor:pointer; }
+  .topbar h1 { font-size:16px; margin:0; display:flex; align-items:center; gap:8px; }
+  .topbar h1 .badge { font-size:10px; background:var(--grad2); color:#fff; padding:3px 9px; border-radius:10px; font-weight:600; }
+  .logout-btn { border:none; background:rgba(255,255,255,0.7); color:var(--ink-soft); padding:8px 16px; border-radius:20px; font-size:12.5px; cursor:pointer; transition:.2s; }
+  .logout-btn:hover { background:#fff; transform:translateY(-1px); box-shadow:0 4px 12px rgba(100,90,160,0.15); }
 
-  .layout { display:grid; grid-template-columns: 1fr 1.1fr; gap:16px; padding:16px 20px; max-width:1100px; margin:0 auto; height:calc(100vh - 60px); }
+  .layout { display:grid; grid-template-columns:1fr 1.15fr; gap:18px; padding:18px 22px; max-width:1140px; margin:0 auto; height:calc(100vh - 60px); }
   @media (max-width:860px) { .layout { grid-template-columns:1fr; height:auto; } }
 
-  .left-col { display:flex; flex-direction:column; gap:14px; min-height:0; }
+  .left-col { display:flex; flex-direction:column; gap:16px; min-height:0; }
 
-  /* CARD STATO (sopra, piccola orizzontale) */
   .stato-card {
-    background:var(--glass); border:1px solid rgba(255,255,255,0.7); backdrop-filter:blur(16px);
-    border-radius:18px; padding:14px 16px; display:flex; align-items:center; gap:12px;
-    box-shadow:0 4px 18px rgba(100,90,160,0.07); flex-shrink:0;
+    background:var(--glass); border:1px solid rgba(255,255,255,0.75); backdrop-filter:blur(20px) saturate(180%);
+    border-radius:20px; padding:16px 18px; display:flex; align-items:center; gap:14px;
+    box-shadow:0 8px 28px rgba(100,90,160,0.10); flex-shrink:0; position:relative; overflow:hidden;
+    animation:fadeUp .5s ease both;
   }
-  .stato-logo { width:42px; height:42px; border-radius:13px; background:var(--grad); display:flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0; }
-  .stato-info { flex:1; }
-  .stato-nome { font-weight:600; font-size:14.5px; }
-  .stato-riga { display:flex; align-items:center; gap:6px; font-size:12px; color:var(--ink-soft); margin-top:2px; }
-  .pallino { width:8px; height:8px; border-radius:50%; }
-  .pallino.verde { background:#3fc97a; box-shadow:0 0 6px #3fc97a; }
-  .pallino.rosso { background:#e0466b; box-shadow:0 0 6px #e0466b; }
-  .attiva-btn { background:var(--grad); border:none; color:#fff; padding:7px 14px; border-radius:16px; font-size:11.5px; font-weight:600; cursor:pointer; }
+  .stato-card::before { content:""; position:absolute; inset:-40%; background:radial-gradient(circle at 20% 20%, rgba(79,216,255,0.18), transparent 55%); animation:drift 10s ease-in-out infinite; pointer-events:none; }
+  @keyframes drift { 0%,100%{transform:translate(0,0);} 50%{transform:translate(3%,-3%);} }
+  @keyframes fadeUp { from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:translateY(0);} }
+  .stato-logo { width:46px; height:46px; border-radius:15px; background:var(--grad); display:flex; align-items:center; justify-content:center; font-size:22px; flex-shrink:0; box-shadow:0 6px 16px rgba(120,100,200,0.3); position:relative; z-index:1; }
+  .stato-info { flex:1; position:relative; z-index:1; }
+  .stato-nome { font-weight:700; font-size:15px; }
+  .stato-riga { display:flex; align-items:center; gap:6px; font-size:12px; color:var(--ink-soft); margin-top:3px; }
+  .pallino { width:9px; height:9px; border-radius:50%; }
+  .pallino.verde { background:#3fc97a; box-shadow:0 0 8px #3fc97a; animation:pulse 2s infinite; }
+  .pallino.rosso { background:#e0466b; box-shadow:0 0 8px #e0466b; }
+  @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:.5;} }
+  .attiva-btn { background:var(--grad2); border:none; color:#fff; padding:8px 16px; border-radius:18px; font-size:11.5px; font-weight:700; cursor:pointer; position:relative; z-index:1; transition:.2s; }
+  .attiva-btn:hover { transform:scale(1.06); box-shadow:0 6px 18px rgba(255,139,214,0.4); }
 
-  /* CARD DASHBOARD (sotto, piu alta) */
   .storico-card {
-    background:var(--glass); border:1px solid rgba(255,255,255,0.7); backdrop-filter:blur(16px);
-    border-radius:18px; padding:16px; flex:1; display:flex; flex-direction:column; min-height:0;
-    box-shadow:0 4px 18px rgba(100,90,160,0.07);
+    background:var(--glass); border:1px solid rgba(255,255,255,0.75); backdrop-filter:blur(20px) saturate(180%);
+    border-radius:20px; padding:18px; flex:1; display:flex; flex-direction:column; min-height:0;
+    box-shadow:0 8px 28px rgba(100,90,160,0.10); animation:fadeUp .5s ease .05s both;
   }
-  .storico-card h3 { font-size:12px; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-soft); margin:0 0 10px; }
-  .storico-list { flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:8px; }
-  .evento-card { background:rgba(255,255,255,0.55); border:1px solid var(--line); border-radius:13px; padding:10px 12px; display:flex; align-items:center; gap:10px; }
-  .evento-emoji { font-size:18px; }
+  .storico-card h3 { font-size:11.5px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); margin:0 0 12px; display:flex; align-items:center; gap:6px; }
+  .storico-list { flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:9px; }
+  .evento-card { background:rgba(255,255,255,0.6); border:1px solid var(--line); border-radius:15px; padding:11px 13px; display:flex; align-items:center; gap:11px; transition:.2s; cursor:default; }
+  .evento-card:hover { transform:translateX(3px); box-shadow:0 6px 16px rgba(100,90,160,0.12); background:rgba(255,255,255,0.85); }
+  .evento-emoji { font-size:19px; }
   .evento-titolo { font-weight:600; font-size:13px; }
   .evento-data { font-size:11.5px; color:var(--ink-soft); }
-  .empty { text-align:center; color:var(--ink-soft); font-size:12.5px; padding:20px 0; }
+  .empty { text-align:center; color:var(--ink-soft); font-size:12.5px; padding:24px 0; }
 
-  .recap-bar { display:flex; gap:10px; margin-top:12px; padding-top:12px; border-top:1px solid var(--line); flex-shrink:0; }
-  .recap-box { flex:1; text-align:center; }
-  .recap-num { font-size:20px; font-weight:700; background:var(--grad); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .recap-bar { display:flex; gap:10px; margin-top:14px; padding-top:14px; border-top:1px solid var(--line); flex-shrink:0; }
+  .recap-box { flex:1; text-align:center; padding:8px; border-radius:14px; transition:.2s; }
+  .recap-box:hover { background:rgba(255,255,255,0.5); transform:translateY(-2px); }
+  .recap-num { font-size:22px; font-weight:800; background:var(--grad2); -webkit-background-clip:text; background-clip:text; color:transparent; }
   .recap-label { font-size:10.5px; color:var(--ink-soft); margin-top:2px; }
 
-  /* COLONNA DESTRA - CHAT */
-  .chat-col { background:var(--glass); border:1px solid rgba(255,255,255,0.7); backdrop-filter:blur(16px);
-    border-radius:18px; padding:16px; display:flex; flex-direction:column; min-height:0;
-    box-shadow:0 4px 18px rgba(100,90,160,0.07); }
-  .chat-box { flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:10px; padding-bottom:8px; }
-  .msg { max-width:82%; padding:10px 14px; border-radius:16px; font-size:13.5px; line-height:1.45; white-space:pre-wrap; }
-  .msg.user { align-self:flex-end; background:var(--grad); color:#fff; }
-  .msg.assistant { align-self:flex-start; background:rgba(255,255,255,0.7); border:1px solid var(--line); }
-  .msg.suggerimento { align-self:center; background:#fff7e6; border:1px solid #ffe2a8; font-size:12px; color:#8a6300; text-align:center; }
+  .chat-col { background:var(--glass); border:1px solid rgba(255,255,255,0.75); backdrop-filter:blur(20px) saturate(180%);
+    border-radius:20px; padding:18px; display:flex; flex-direction:column; min-height:0;
+    box-shadow:0 8px 28px rgba(100,90,160,0.10); animation:fadeUp .5s ease .1s both; }
+  .chat-box { flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:11px; padding-bottom:8px; }
+  .msg { max-width:82%; padding:11px 15px; border-radius:17px; font-size:13.5px; line-height:1.5; white-space:pre-wrap; animation:popIn .25s ease both; }
+  @keyframes popIn { from{opacity:0; transform:scale(.95) translateY(4px);} to{opacity:1; transform:scale(1) translateY(0);} }
+  .msg.user { align-self:flex-end; background:var(--grad); color:#fff; box-shadow:0 4px 14px rgba(79,216,255,0.3); }
+  .msg.assistant { align-self:flex-start; background:rgba(255,255,255,0.85); border:1px solid var(--line); box-shadow:0 2px 10px rgba(100,90,160,0.06); }
+  .msg.suggerimento { align-self:center; background:linear-gradient(135deg, #fff7e6, #ffeed9); border:1px solid #ffe2a8; font-size:12px; color:#8a6300; text-align:center; }
 
-  .confirm-bar { display:flex; gap:8px; margin-top:6px; }
-  .confirm-bar button { flex:1; border:none; padding:10px; border-radius:14px; font-size:13px; font-weight:600; cursor:pointer; }
-  .confirm-yes { background:var(--grad); color:#fff; }
-  .confirm-no { background:#f1ecff; color:var(--ink-soft); }
+  .confirm-bar { display:flex; gap:9px; margin-top:6px; }
+  .confirm-bar button { flex:1; border:none; padding:11px; border-radius:15px; font-size:13px; font-weight:700; cursor:pointer; transition:.2s; }
+  .confirm-yes { background:var(--grad2); color:#fff; }
+  .confirm-yes:hover { transform:scale(1.03); box-shadow:0 6px 16px rgba(255,139,214,0.4); }
+  .confirm-no { background:rgba(0,0,0,0.05); color:var(--ink-soft); }
+  .confirm-no:hover { background:rgba(0,0,0,0.08); }
 
-  .chat-input-row { display:flex; gap:8px; align-items:center; margin-top:10px; flex-shrink:0; }
-  .chat-input-row input[type=text] { flex:1; border:1px solid var(--line); border-radius:20px; padding:11px 16px; font-size:14px; outline:none; }
-  .icon-btn { background:#f1ecff; border:none; width:42px; height:42px; border-radius:50%; font-size:16px; cursor:pointer; flex-shrink:0; }
-  .send-btn { background:var(--grad); border:none; color:#fff; width:42px; height:42px; border-radius:50%; font-size:16px; cursor:pointer; flex-shrink:0; }
+  .chat-input-row { display:flex; gap:9px; align-items:center; margin-top:12px; flex-shrink:0; }
+  .chat-input-row input[type=text] { flex:1; border:1px solid var(--line); border-radius:22px; padding:12px 18px; font-size:14px; outline:none; background:rgba(255,255,255,0.7); transition:.2s; }
+  .chat-input-row input[type=text]:focus { box-shadow:0 0 0 3px rgba(79,216,255,0.25); border-color:var(--cyan); }
+  .icon-btn { background:rgba(154,123,255,0.12); border:none; width:44px; height:44px; border-radius:50%; font-size:17px; cursor:pointer; flex-shrink:0; transition:.2s; }
+  .icon-btn:hover { transform:scale(1.1) rotate(-8deg); background:rgba(154,123,255,0.2); }
+  .send-btn { background:var(--grad); border:none; color:#fff; width:44px; height:44px; border-radius:50%; font-size:17px; cursor:pointer; flex-shrink:0; transition:.2s; box-shadow:0 4px 14px rgba(79,216,255,0.35); }
+  .send-btn:hover { transform:scale(1.1); }
+  .send-btn:active { transform:scale(0.92); }
   input[type=file] { display:none; }
 
-  #loginScreen { display:flex; align-items:center; justify-content:center; min-height:100vh; padding:20px; }
-  .login-card { background:var(--glass); border:1px solid rgba(255,255,255,0.7); backdrop-filter:blur(20px); border-radius:20px; padding:28px; width:100%; max-width:360px; box-shadow:0 10px 30px rgba(100,90,160,0.12); }
-  .login-card h2 { margin:0 0 4px; font-size:20px; }
-  .login-card p.sub { color:var(--ink-soft); font-size:13px; margin:0 0 18px; }
-  .login-card input { width:100%; padding:12px 14px; margin-bottom:10px; border:1px solid var(--line); border-radius:12px; font-size:14px; }
-  .login-card button { width:100%; padding:12px; border:none; border-radius:20px; background:var(--grad); color:#fff; font-weight:600; font-size:14px; cursor:pointer; margin-top:6px; }
-  .login-error { color:#e0466b; font-size:12px; margin-top:6px; min-height:16px; }
+  .connect-banner { background:var(--grad2); color:#fff; padding:13px 16px; border-radius:16px; margin-bottom:12px; font-size:12.5px; display:flex; align-items:center; justify-content:space-between; gap:10px; flex-shrink:0; box-shadow:0 6px 18px rgba(255,139,214,0.3); animation:fadeUp .5s ease both; }
+  .connect-banner button { background:rgba(255,255,255,0.3); border:none; color:#fff; padding:8px 14px; border-radius:14px; font-size:11.5px; cursor:pointer; white-space:nowrap; font-weight:700; transition:.2s; }
+  .connect-banner button:hover { background:rgba(255,255,255,0.45); transform:scale(1.05); }
 
-  .connect-banner { background:var(--grad); color:#fff; padding:12px 14px; border-radius:14px; margin-bottom:10px; font-size:12.5px; display:flex; align-items:center; justify-content:space-between; gap:10px; flex-shrink:0; }
-  .connect-banner button { background:rgba(255,255,255,0.25); border:none; color:#fff; padding:7px 12px; border-radius:14px; font-size:11.5px; cursor:pointer; white-space:nowrap; }
+  .loading-msg { text-align:center; color:var(--ink-soft); font-size:13px; padding:40px 0; }
+  .spinner { width:24px; height:24px; border:3px solid var(--line); border-top-color:var(--violet); border-radius:50%; margin:0 auto 10px; animation:spin .8s linear infinite; }
+  @keyframes spin { to{transform:rotate(360deg);} }
 </style>
 </head>
 <body>
 
-<div id="loginScreen">
-  <div class="login-card">
-    <h2>📅 BookEasy</h2>
-    <p class="sub">Accedi al tuo account Maix</p>
-    <input id="loginEmail" type="email" placeholder="Email">
-    <input id="loginPassword" type="password" placeholder="Password">
-    <button onclick="login()">Accedi</button>
-    <div class="login-error" id="loginError"></div>
-  </div>
+<div id="loadingScreen" style="display:flex; align-items:center; justify-content:center; min-height:100vh;">
+  <div class="loading-msg"><div class="spinner"></div>Caricamento BookEasy...</div>
 </div>
 
 <div id="dashboard" style="display:none;">
   <div class="topbar">
-    <h1>📅 BookEasy</h1>
-    <button class="logout-btn" onclick="logout()">Esci</button>
+    <h1>📅 BookEasy <span class="badge">AI</span></h1>
+    <button class="logout-btn" id="logoutBtn">Torna a Maix</button>
   </div>
 
   <div class="layout">
@@ -120,18 +133,18 @@
           <div class="stato-nome">BookEasy</div>
           <div class="stato-riga"><span class="pallino" id="pallino"></span> <span id="statoTesto">—</span></div>
         </div>
-        <button class="attiva-btn" id="attivaBtn" style="display:none;" onclick="attivaBot()">Attiva</button>
+        <button class="attiva-btn" id="attivaBtn" style="display:none;">✨ Attiva</button>
       </div>
 
       <div class="storico-card">
         <div id="connectBanner" class="connect-banner" style="display:none;">
-          <span>🔗 Collega Google Calendar</span>
-          <button onclick="connectGoogle()">Collega</button>
+          <span>🔗 Collega Google Calendar per iniziare</span>
+          <button id="connectBtn">Collega</button>
         </div>
-        <h3>Ultimi appuntamenti</h3>
+        <h3>📋 Ultimi appuntamenti</h3>
         <div class="storico-list" id="eventiList"></div>
         <div class="recap-bar">
-          <div class="recap-box"><div class="recap-num" id="numInviati">0</div><div class="recap-label">Inviati in totale</div></div>
+          <div class="recap-box"><div class="recap-num" id="numInviati">0</div><div class="recap-label">Inviati totali</div></div>
           <div class="recap-box"><div class="recap-num" id="numConfermati">0</div><div class="recap-label">Confermati</div></div>
         </div>
       </div>
@@ -140,54 +153,52 @@
     <div class="chat-col">
       <div class="chat-box" id="chatBox"></div>
       <div class="chat-input-row">
-        <button class="icon-btn" onclick="document.getElementById('fileInput').click()">📎</button>
-        <input type="file" id="fileInput" accept="image/*,audio/*" onchange="inviaMedia(event)">
-        <input type="text" id="chatInput" placeholder="Scrivi, anche disordinato..." onkeypress="if(event.key==='Enter') sendMessage()">
-        <button class="send-btn" onclick="sendMessage()">➤</button>
+        <button class="icon-btn" id="attachBtn">📎</button>
+        <input type="file" id="fileInput" accept="image/*,audio/*">
+        <input type="text" id="chatInput" placeholder="Scrivi, anche disordinato... ✍️">
+        <button class="send-btn" id="sendBtn">➤</button>
       </div>
     </div>
   </div>
 </div>
 
 <script>
-  // Progetto Supabase VECCHIO: solo per login/account (stesso del resto del sito Maix)
+  // Stesso progetto Supabase dell'account Maix (login.html) - UNIFICATO
   const SUPABASE_URL = 'https://jrerstiidlckirwsrwxb.supabase.co';
   const SUPABASE_ANON_KEY = 'sb_publishable_ocpocdr5RJt52INjxHFSFg_1m95AAhp';
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  let clienteId = null;
-  let clienteEmail = null;
+  let authUserId = null;
 
-  async function login() {
-    const email = document.getElementById('loginEmail').value;
-    const password = document.getElementById('loginPassword').value;
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) { document.getElementById('loginError').textContent = 'Email o password errati.'; return; }
-    await entraDashboard(data.user.email);
-  }
-
-  async function logout() { await supabase.auth.signOut(); location.reload(); }
-
-  async function checkSessione() {
-    const { data } = await supabase.auth.getSession();
-    if (data.session) await entraDashboard(data.session.user.email);
-  }
-  checkSessione();
-
-  async function entraDashboard(email) {
-    clienteEmail = email;
-    // Trova o crea il cliente Book Easy nel progetto Supabase NUOVO, usando l'email come chiave comune
-    const res = await fetch(`/.netlify/functions/get-dati?email=${encodeURIComponent(email)}`);
-    const data = await res.json();
-    clienteId = data.cliente.id;
-    document.getElementById('loginScreen').style.display = 'none';
+  async function avvia() {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      // Non loggato su Maix: rimanda al login, poi torna qui
+      window.location.href = 'login.html?redirect=dashboard.html';
+      return;
+    }
+    authUserId = session.user.id;
+    document.getElementById('loadingScreen').style.display = 'none';
     document.getElementById('dashboard').style.display = 'block';
-    mostraDati(data);
+    caricaDati();
   }
+  avvia();
+
+  document.getElementById('logoutBtn').addEventListener('click', () => { window.location.href = 'index.html'; });
+  document.getElementById('attivaBtn').addEventListener('click', attivaBot);
+  document.getElementById('connectBtn').addEventListener('click', connectGoogle);
+  document.getElementById('attachBtn').addEventListener('click', () => document.getElementById('fileInput').click());
+  document.getElementById('fileInput').addEventListener('change', inviaMedia);
+  document.getElementById('sendBtn').addEventListener('click', sendMessage);
+  document.getElementById('chatInput').addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
 
   async function caricaDati() {
-    const res = await fetch(`/.netlify/functions/get-dati?email=${encodeURIComponent(clienteEmail)}`);
+    const res = await fetch(`/.netlify/functions/get-dati?auth_user_id=${authUserId}`);
     const data = await res.json();
+    if (data.error) {
+      document.getElementById('chatBox').innerHTML = `<div class="msg suggerimento">⚠️ ${esc(data.error)}</div>`;
+      return;
+    }
     mostraDati(data);
   }
 
@@ -198,7 +209,7 @@
 
     const pallino = document.getElementById('pallino');
     const attivaBtn = document.getElementById('attivaBtn');
-    if (cliente.attivo) {
+    if (cliente.bookeasy_attivo) {
       pallino.className = 'pallino verde';
       document.getElementById('statoTesto').textContent = 'Attivo';
       attivaBtn.style.display = 'none';
@@ -214,7 +225,7 @@
     const lista = document.getElementById('eventiList');
     lista.innerHTML = eventi.length
       ? eventi.map(e => `<div class="evento-card"><div class="evento-emoji">${e.emoji||'📅'}</div><div><div class="evento-titolo">${e.titolo}</div><div class="evento-data">${new Date(e.data_inizio).toLocaleString('it-IT',{dateStyle:'medium',timeStyle:'short'})}</div></div></div>`).join('')
-      : '<div class="empty">Nessun appuntamento ancora</div>';
+      : '<div class="empty">✨ Nessun appuntamento ancora</div>';
 
     const box = document.getElementById('chatBox');
     if (!box.dataset.init) {
@@ -232,48 +243,48 @@
   function mostraConferma(proposta) {
     const box = document.getElementById('chatBox');
     if (document.getElementById('confirmBar-'+proposta.id)) return;
-    box.innerHTML += `<div class="confirm-bar" id="confirmBar-${proposta.id}">
-      <button class="confirm-yes" onclick="confermaProposta('${proposta.id}')">✅ Conferma</button>
-      <button class="confirm-no" onclick="annullaProposta('${proposta.id}')">Annulla</button>
-    </div>`;
+    const div = document.createElement('div');
+    div.className = 'confirm-bar';
+    div.id = 'confirmBar-'+proposta.id;
+    div.innerHTML = `<button class="confirm-yes">✅ Conferma</button><button class="confirm-no">Annulla</button>`;
+    div.querySelector('.confirm-yes').addEventListener('click', () => confermaProposta(proposta.id));
+    div.querySelector('.confirm-no').addEventListener('click', () => div.remove());
+    box.appendChild(div);
     box.scrollTop = box.scrollHeight;
   }
 
   async function confermaProposta(id) {
-    document.getElementById('confirmBar-'+id).remove();
+    const bar = document.getElementById('confirmBar-'+id);
+    if (bar) bar.remove();
     const res = await fetch('/.netlify/functions/conferma-proposta', {
       method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ proposta_id: id, cliente_id: clienteId })
+      body: JSON.stringify({ proposta_id: id, auth_user_id: authUserId })
     });
     const data = await res.json();
     const box = document.getElementById('chatBox');
-    box.innerHTML += `<div class="msg assistant">✅ Fatto! ${data.aggiunti} appuntamento/i aggiunti al calendario.</div>`;
+    box.innerHTML += `<div class="msg assistant">✅ Fatto! ${data.aggiunti||0} appuntamento/i aggiunti al calendario.</div>`;
     box.scrollTop = box.scrollHeight;
-    document.getElementById('dashboard').dataset.refresh = '1';
     refreshSoloEventi();
   }
 
-  async function annullaProposta(id) {
-    document.getElementById('confirmBar-'+id).remove();
-  }
-
   async function refreshSoloEventi() {
-    const box = document.getElementById('chatBox'); box.dataset.init = '1';
-    const res = await fetch(`/.netlify/functions/get-dati?cliente_id=${clienteId}`);
-    const { cliente, eventi } = await res.json();
+    const res = await fetch(`/.netlify/functions/get-dati?auth_user_id=${authUserId}`);
+    const data = await res.json();
+    if (data.error) return;
+    const { cliente, eventi } = data;
     document.getElementById('numInviati').textContent = cliente.tot_appuntamenti_inviati || 0;
     document.getElementById('numConfermati').textContent = cliente.tot_appuntamenti_confermati || 0;
-    document.getElementById('pallino').className = cliente.attivo ? 'pallino verde' : 'pallino rosso';
-    document.getElementById('statoTesto').textContent = cliente.attivo ? 'Attivo' : 'Non attivo';
-    document.getElementById('attivaBtn').style.display = cliente.attivo ? 'none' : 'inline-block';
+    document.getElementById('pallino').className = cliente.bookeasy_attivo ? 'pallino verde' : 'pallino rosso';
+    document.getElementById('statoTesto').textContent = cliente.bookeasy_attivo ? 'Attivo' : 'Non attivo';
+    document.getElementById('attivaBtn').style.display = cliente.bookeasy_attivo ? 'none' : 'inline-block';
     const lista = document.getElementById('eventiList');
     lista.innerHTML = eventi.length
       ? eventi.map(e => `<div class="evento-card"><div class="evento-emoji">${e.emoji||'📅'}</div><div><div class="evento-titolo">${e.titolo}</div><div class="evento-data">${new Date(e.data_inizio).toLocaleString('it-IT',{dateStyle:'medium',timeStyle:'short'})}</div></div></div>`).join('')
-      : '<div class="empty">Nessun appuntamento ancora</div>';
+      : '<div class="empty">✨ Nessun appuntamento ancora</div>';
   }
 
   async function attivaBot() {
-    await fetch('/.netlify/functions/attiva-bot', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ cliente_id: clienteId }) });
+    await fetch('/.netlify/functions/attiva-bot', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ auth_user_id: authUserId }) });
     refreshSoloEventi();
   }
 
@@ -284,22 +295,60 @@
     input.value = '';
     const box = document.getElementById('chatBox');
     box.innerHTML += `<div class="msg user">${esc(testo)}</div>`;
-    box.scrollTop = box.scrollHeight;
+    mostraTyping();
+    impostaInputAttivo(false);
 
-    const res = await fetch('/.netlify/functions/chat-message', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ cliente_id: clienteId, testo })
-    });
-    const data = await res.json();
-    box.innerHTML += `<div class="msg assistant">${esc(data.risposta||'')}</div>`;
-    box.scrollTop = box.scrollHeight;
-    if (data.richiede_conferma) mostraConferma({ id: data.proposta_id });
-    refreshSoloEventi();
+    try {
+      const res = await fetch('/.netlify/functions/chat-message', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ auth_user_id: authUserId, testo })
+      });
+      const data = await res.json();
+      rimuoviTyping();
+      box.innerHTML += `<div class="msg assistant">${esc(data.risposta||'Errore di comunicazione, riprova.')}</div>`;
+      box.scrollTop = box.scrollHeight;
+      if (data.richiede_conferma) mostraConferma({ id: data.proposta_id });
+      refreshSoloEventi();
+    } catch (err) {
+      rimuoviTyping();
+      box.innerHTML += `<div class="msg assistant">😅 Problema di connessione, riprova.</div>`;
+    } finally {
+      impostaInputAttivo(true);
+    }
   }
+
+  function mostraTyping() {
+    const box = document.getElementById('chatBox');
+    const div = document.createElement('div');
+    div.className = 'msg assistant';
+    div.id = 'typingIndicator';
+    div.innerHTML = '💭 <span style="opacity:.6;">sto pensando...</span>';
+    box.appendChild(div);
+    box.scrollTop = box.scrollHeight;
+  }
+  function rimuoviTyping() {
+    const el = document.getElementById('typingIndicator');
+    if (el) el.remove();
+  }
+  function impostaInputAttivo(attivo) {
+    document.getElementById('chatInput').disabled = !attivo;
+    document.getElementById('sendBtn').disabled = !attivo;
+    document.getElementById('attachBtn').disabled = !attivo;
+    document.getElementById('sendBtn').style.opacity = attivo ? '1' : '0.5';
+  }
+
+  const LIMITE_FILE_MB = 8;
 
   async function inviaMedia(event) {
     const file = event.target.files[0];
     if (!file) return;
+
+    if (file.size > LIMITE_FILE_MB * 1024 * 1024) {
+      document.getElementById('chatBox').innerHTML += `<div class="msg suggerimento">⚠️ Il file è troppo grande (max ${LIMITE_FILE_MB}MB). Provane uno più leggero.</div>`;
+      event.target.value = '';
+      return;
+    }
+
     const base64 = await new Promise((res, rej) => {
       const r = new FileReader();
       r.onload = () => res(r.result.split(',')[1]);
@@ -309,22 +358,31 @@
 
     const box = document.getElementById('chatBox');
     box.innerHTML += `<div class="msg user">📎 ${file.type.startsWith('audio') ? 'Audio inviato' : 'Immagine inviata'}</div>`;
-    box.scrollTop = box.scrollHeight;
+    mostraTyping();
+    impostaInputAttivo(false);
 
-    const res = await fetch('/.netlify/functions/chat-message', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ cliente_id: clienteId, media_base64: base64, media_mime: file.type })
-    });
-    const data = await res.json();
-    box.innerHTML += `<div class="msg assistant">${esc(data.risposta||'')}</div>`;
-    box.scrollTop = box.scrollHeight;
-    if (data.richiede_conferma) mostraConferma({ id: data.proposta_id });
-    refreshSoloEventi();
-    event.target.value = '';
+    try {
+      const res = await fetch('/.netlify/functions/chat-message', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ auth_user_id: authUserId, media_base64: base64, media_mime: file.type })
+      });
+      const data = await res.json();
+      rimuoviTyping();
+      box.innerHTML += `<div class="msg assistant">${esc(data.risposta||'Errore di comunicazione, riprova.')}</div>`;
+      box.scrollTop = box.scrollHeight;
+      if (data.richiede_conferma) mostraConferma({ id: data.proposta_id });
+      refreshSoloEventi();
+    } catch (err) {
+      rimuoviTyping();
+      box.innerHTML += `<div class="msg assistant">😅 Problema di connessione, riprova.</div>`;
+    } finally {
+      impostaInputAttivo(true);
+      event.target.value = '';
+    }
   }
 
   function connectGoogle() {
-    window.location.href = `/.netlify/functions/oauth-start?cliente_id=${clienteId}`;
+    window.location.href = `/.netlify/functions/oauth-start?auth_user_id=${authUserId}`;
   }
 </script>
 
