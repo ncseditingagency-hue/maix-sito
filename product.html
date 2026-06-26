@@ -559,8 +559,8 @@
       icon: "📅",
       tagline: "Appuntamenti in ordine, senza pensieri",
       desc: "Manda un recap disordinato dei tuoi appuntamenti, lui li fissa tutti sul calendario.",
-      price: "Gratis",
-      label: "Periodo di lancio",
+      price: "€100",
+      label: "Una tantum",
       chips: ["Capisce testo libero", "Niente sovrapposizioni", "Calendario sempre aggiornato"],
       how: [
         "Scrivi su Telegram il recap dei tuoi appuntamenti, anche disordinato",
@@ -568,7 +568,7 @@
         "Fissa tutto su Google Calendar, evitando doppie prenotazioni"
       ],
       need: ["Un account Google (per il Calendario)", "Un account Telegram"],
-      driveLink: "dashboard.html"
+      driveLink: "atlas-code.html"
     },
     agentcheck: {
       name: "AgentCheck",
@@ -710,7 +710,7 @@
             document.getElementById('paypal-button-container').innerHTML = `
               <div style="text-align:center; padding:14px 0;">
                 <p style="font-size:14px; color:var(--ink-soft); margin-bottom:10px;">Pagamento completato 🎉</p>
-                <a href="${p.driveLink}" target="_blank" class="btn btn-buy price-tier-${priceTier(p.price)}" style="display:block; text-decoration:none;">⬇️ Scarica ${p.name}</a>
+                <a href="${p.driveLink}" class="btn btn-buy price-tier-${priceTier(p.price)}" style="display:block; text-decoration:none;">⬇️ Vai su Atlas Code per configurare ${p.name}</a>
               </div>`;
           } else {
             alert('Il pagamento non è andato a buon fine, riprova.');

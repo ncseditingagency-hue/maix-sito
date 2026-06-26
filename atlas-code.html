@@ -563,7 +563,7 @@
   // ⚠️ MODALITÀ TEST TEMPORANEA — TidyDesk (gratis) sblocca Atlas Code solo
   // per provarlo. Quando i test sono finiti, togli 'tidydesk' da questa lista
   // per richiudere l'accesso ai soli agenti a pagamento.
-  const PAID_AGENTS = ['nudgebot', 'replybuddy', 'bookeasy', 'tidydesk' /* ← TEST: rimuovere quando finiti i test */];
+  const PAID_AGENTS = ['nudgebot', 'replybuddy', 'bookeasy'];
 
   async function checkAccess() {
     if (!mSupabase || !currentSession) {
