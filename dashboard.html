@@ -171,18 +171,35 @@
   let authUserId = null;
 
   async function avvia() {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      // Non loggato su Maix: rimanda al login, poi torna qui
-      window.location.href = 'login.html?redirect=dashboard.html';
-      return;
+    try {
+      const { data, error } = await supabase.auth.getSession();
+      if (error) throw error;
+
+      const session = data?.session;
+      if (!session) {
+        window.location.href = 'login.html?redirect=dashboard.html';
+        return;
+      }
+      authUserId = session.user.id;
+      document.getElementById('loadingScreen').style.display = 'none';
+      document.getElementById('dashboard').style.display = 'block';
+      await caricaDati();
+    } catch (err) {
+      console.error('Errore avvio dashboard:', err);
+      mostraErroreCaricamento('Non riesco a verificare il tuo accesso. Controlla la connessione e riprova, oppure torna al login.', err.message);
     }
-    authUserId = session.user.id;
-    document.getElementById('loadingScreen').style.display = 'none';
-    document.getElementById('dashboard').style.display = 'block';
-    caricaDati();
   }
   avvia();
+
+  function mostraErroreCaricamento(messaggio, dettaglio) {
+    document.getElementById('loadingScreen').innerHTML = `
+      <div class="loading-msg" style="max-width:320px;">
+        <div style="font-size:32px; margin-bottom:10px;">😅</div>
+        <div style="font-weight:600; margin-bottom:6px;">${messaggio}</div>
+        ${dettaglio ? `<div style="font-size:11px; color:#999; margin-bottom:14px;">${esc(dettaglio)}</div>` : ''}
+        <a href="login.html" style="display:inline-block; padding:10px 20px; border-radius:18px; background:linear-gradient(135deg,#4fd8ff,#9a7bff); color:#fff; text-decoration:none; font-weight:600; font-size:13px;">Vai al login</a>
+      </div>`;
+  }
 
   document.getElementById('logoutBtn').addEventListener('click', () => { window.location.href = 'index.html'; });
   document.getElementById('attivaBtn').addEventListener('click', attivaBot);
@@ -193,13 +210,26 @@
   document.getElementById('chatInput').addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
 
   async function caricaDati() {
-    const res = await fetch(`/.netlify/functions/get-dati?auth_user_id=${authUserId}`);
-    const data = await res.json();
-    if (data.error) {
-      document.getElementById('chatBox').innerHTML = `<div class="msg suggerimento">⚠️ ${esc(data.error)}</div>`;
-      return;
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+      const res = await fetch(`/.netlify/functions/get-dati?auth_user_id=${authUserId}`, { signal: controller.signal });
+      clearTimeout(timeoutId);
+
+      if (!res.ok) throw new Error('Il server ha risposto con errore ' + res.status);
+      const data = await res.json();
+      if (data.error) {
+        document.getElementById('chatBox').innerHTML = `<div class="msg suggerimento">⚠️ ${esc(data.error)}</div>`;
+        return;
+      }
+      mostraDati(data);
+    } catch (err) {
+      console.error('Errore caricamento dati BookEasy:', err);
+      const msg = err.name === 'AbortError'
+        ? 'Il server sta impiegando troppo tempo a rispondere. Controlla che le variabili ambiente siano configurate su Netlify.'
+        : 'Non riesco a caricare i tuoi dati. Riprova a ricaricare la pagina.';
+      document.getElementById('chatBox').innerHTML = `<div class="msg suggerimento">⚠️ ${esc(msg)}</div>`;
     }
-    mostraDati(data);
   }
 
   function mostraDati(data) {
