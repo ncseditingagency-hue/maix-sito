@@ -148,17 +148,24 @@
 
   // VERSIONE TEST: niente login, email finta generata/riusata da localStorage del browser
   async function entraDashboardTest() {
+    document.getElementById('dashboard').style.display = 'block'; // mostro subito, anche se la fetch è lenta/fallisce
     let emailTest = localStorage.getItem('bookeasy_test_email');
     if (!emailTest) {
       emailTest = 'test-' + Math.random().toString(36).slice(2, 8) + '@maix-test.it';
       localStorage.setItem('bookeasy_test_email', emailTest);
     }
     clienteEmail = emailTest;
-    const res = await fetch(`/.netlify/functions/get-dati?email=${encodeURIComponent(emailTest)}`);
-    const data = await res.json();
-    clienteId = data.cliente.id;
-    document.getElementById('dashboard').style.display = 'block';
-    mostraDati(data);
+    try {
+      const res = await fetch(`/.netlify/functions/get-dati?email=${encodeURIComponent(emailTest)}`);
+      if (!res.ok) throw new Error('Risposta server non ok: ' + res.status);
+      const data = await res.json();
+      if (!data.cliente) throw new Error('Cliente non presente nella risposta');
+      clienteId = data.cliente.id;
+      mostraDati(data);
+    } catch (err) {
+      document.getElementById('chatBox').innerHTML = `<div class="msg suggerimento">⚠️ Errore di connessione al server: ${err.message}<br><br>Controlla che le variabili ambiente siano impostate su Netlify e che le tabelle Supabase esistano.</div>`;
+      console.error('Errore caricamento dashboard test:', err);
+    }
   }
   entraDashboardTest();
 
